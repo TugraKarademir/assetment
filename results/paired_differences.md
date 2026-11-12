@@ -1,0 +1,27 @@
+| karşılaştırma | item | level | n | qwk_a | qwk_b | fark | ci_low | ci_high | p_bootstrap |
+|---|---|---|---|---|---|---|---|---|---|
+| full − panel_vote | S1 | TOPLAM | 30 | 0.564 | 0.616 | -0.052 | -0.130 | 0.020 | 0.141 |
+| full − panel_vote | S2 | TOPLAM | 30 | 0.788 | 0.800 | -0.012 | -0.040 | 0.000 | 0.235 |
+| full − panel_vote | S3 | TOPLAM | 30 | 0.747 | 0.741 | 0.006 | -0.005 | 0.021 | 0.365 |
+| full − panel_vote | S4 | TOPLAM | 30 | 0.509 | 0.425 | 0.084 | -0.034 | 0.205 | 0.167 |
+| full − panel_vote | TÜMÜ | TOPLAM | 120 | 0.664 | 0.649 | 0.015 | -0.025 | 0.056 | 0.488 |
+| full − full_no_revision | S1 | TOPLAM | 30 | 0.564 | 0.596 | -0.032 | -0.134 | 0.097 | 0.560 |
+| full − full_no_revision | S2 | TOPLAM | 30 | 0.788 | 0.792 | -0.004 | -0.018 | 0.000 | 0.734 |
+| full − full_no_revision | S3 | TOPLAM | 30 | 0.747 | 0.753 | -0.006 | -0.022 | 0.006 | 0.424 |
+| full − full_no_revision | S4 | TOPLAM | 30 | 0.509 | 0.571 | -0.061 | -0.155 | 0.052 | 0.238 |
+| full − full_no_revision | TÜMÜ | TOPLAM | 120 | 0.664 | 0.695 | -0.032 | -0.077 | 0.012 | 0.164 |
+| full − full_equal_weight | S1 | TOPLAM | 30 | 0.564 | 0.601 | -0.037 | -0.096 | 0.006 | 0.087 |
+| full − full_equal_weight | S2 | TOPLAM | 30 | 0.788 | 0.791 | -0.004 | -0.014 | 0.000 | 0.747 |
+| full − full_equal_weight | S3 | TOPLAM | 30 | 0.747 | 0.741 | 0.007 | 0.000 | 0.018 | 0.302 |
+| full − full_equal_weight | S4 | TOPLAM | 30 | 0.509 | 0.442 | 0.067 | -0.028 | 0.161 | 0.150 |
+| full − full_equal_weight | TÜMÜ | TOPLAM | 120 | 0.664 | 0.648 | 0.016 | -0.016 | 0.049 | 0.376 |
+| full − full_llm_aggregator | S1 | TOPLAM | 30 | 0.564 | 0.584 | -0.020 | -0.093 | 0.044 | 0.536 |
+| full − full_llm_aggregator | S2 | TOPLAM | 30 | 0.788 | 0.775 | 0.013 | -0.027 | 0.060 | 0.491 |
+| full − full_llm_aggregator | S3 | TOPLAM | 30 | 0.747 | 0.740 | 0.007 | -0.003 | 0.028 | 0.475 |
+| full − full_llm_aggregator | S4 | TOPLAM | 30 | 0.509 | 0.433 | 0.076 | -0.029 | 0.179 | 0.129 |
+| full − full_llm_aggregator | TÜMÜ | TOPLAM | 120 | 0.664 | 0.643 | 0.021 | -0.015 | 0.060 | 0.286 |
+| full − full_zeroshot | S1 | TOPLAM | 30 | 0.564 | 0.560 | 0.004 | -0.281 | 0.303 | 0.909 |
+| full − full_zeroshot | S2 | TOPLAM | 30 | 0.788 | 0.844 | -0.056 | -0.190 | 0.058 | 0.361 |
+| full − full_zeroshot | S3 | TOPLAM | 30 | 0.747 | 0.607 | 0.140 | -0.082 | 0.357 | 0.212 |
+| full − full_zeroshot | S4 | TOPLAM | 30 | 0.509 | 0.798 | -0.289 | -0.467 | -0.097 | 0.002 |
+| full − full_zeroshot | TÜMÜ | TOPLAM | 120 | 0.664 | 0.713 | -0.050 | -0.194 | 0.088 | 0.493 |

@@ -1,0 +1,22 @@
+# Yazım denetiminde hata sayılmayacak alan terimleri ve yabancı teknik sözcükler (küçük harf).
+overfitting
+underfitting
+dropout
+precision
+recall
+precision@k
+recall@k
+regresyon
+epok
+epoklar
+epoklara
+ai
+ml
+spam
+zekâ
+zekânın
+kvkk
+triyaj
+sepsis
+a/b
+hibrit

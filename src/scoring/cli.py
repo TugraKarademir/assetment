@@ -153,6 +153,175 @@ def score(condition: str = typer.Option("full", help="full | panel_vote | single
         typer.echo(f"  {k}: {v}")
 
 
+def _gold_context():
+    from .data import gold_consensus, load_human_scores, load_responses
+    exp, bank = load_experiment(), load_items()
+    responses = load_responses(exp.path("responses"))
+    folds = pd.read_csv(exp.path("gold_folds"), dtype={"response_id": str, "student_code": str})
+    consensus = gold_consensus(load_human_scores(exp.path("human_scores")), exp.gold["consensus"],
+                               exp.aggregation["rounding"])
+    consensus = consensus[consensus.response_id.isin(folds.response_id)]
+    return exp, bank, responses, folds, consensus
+
+
+@app.command("embed-baseline")
+def embed_baseline_cmd(offline_demo: bool = typer.Option(False, help="HuggingFace erişimi yoksa TF-IDF DEMO kodlayıcı"),
+                       models_subset: Optional[str] = typer.Option(None, help="Virgülle ayrılmış model adları (alt küme)")):
+    """Gömme tabanlı karşılaştırma koşulu (altın set, aynı katlar)."""
+    from .data import criteria_frame
+    from .embedding_baseline import (SentenceTransformerEncoder, TfidfDemoEncoder, cv_embedding_scores,
+                                     log_embedding_run, similarity_features)
+    from .leakage import check_leakage
+    from .manifest import new_run_id, write_manifest
+    exp, bank, responses, folds, consensus = _gold_context()
+    check_leakage(bank, responses, set(folds.response_id))
+    gold = responses[responses.response_id.isin(folds.response_id)]
+    emb = exp.embedding
+    if offline_demo:
+        corpus = list(responses.text) + [a.text for it in bank.items for a in it.anchors] + \
+                 [it.reference_answer or "" for it in bank.items]
+        encoders, condition = [TfidfDemoEncoder(corpus=corpus)], "embedding_tfidf_demo"
+    else:
+        specs = emb["models"]
+        if models_subset:
+            keep = set(models_subset.split(","))
+            specs = [m for m in specs if m["name"] in keep]
+        encoders = [SentenceTransformerEncoder(m["name"], m.get("query_prefix", ""), m.get("passage_prefix", ""),
+                                               cache_dir="data/derived/embedding_cache",
+                                               forbidden=emb.get("forbidden_patterns")) for m in specs]
+        condition = "embedding"
+    run_id = new_run_id(condition)
+    write_manifest(run_id, exp.path("logs_dir"), exp.path("results_dir"),
+                   ["config/items.yaml", "config/experiment.yaml"], exp.seeds,
+                   {"condition": condition, "encoders": [e.name for e in encoders]})
+    feats = similarity_features(gold, bank, encoders, emb.get("softmax_temperature", 0.05))
+    y = consensus[["response_id", "criterion_id", "consensus"]].rename(columns={"consensus": "y"})
+    preds, coefs = cv_embedding_scores(feats, y, folds, criteria_frame(bank)[["item_id", "criterion_id", "score_min", "score_max"]],
+                                       level=emb.get("ordinal_level", "item"), l2=emb.get("ordinal_l2", 1.0))
+    preds = log_embedding_run(run_id, exp.path("logs_dir"), preds, [e.name for e in encoders], condition)
+    preds.assign(condition=condition).to_csv("data/derived/embedding_preds.csv", index=False)
+    coefs.to_csv(exp.path("results_dir") / "embedding_ordinal_coefficients.csv", index=False)
+    typer.echo(f"{condition}: {preds.pred.notna().sum()} / {len(preds)} ölçüt puanı tahmin edildi (run {run_id})")
+
+
+@app.command("build-conditions")
+def build_conditions_cmd(models: Path = ModelsOpt, replicate: int = 1):
+    """Ham puanlardan tüm ablasyon koşullarının puanlarını (aynı katlarla) üretir."""
+    from .ablation import build_condition_scores, summarize_weights
+    from .pipeline import load_raw_scores
+    from .utils import write_table
+    exp, bank, responses, folds, consensus = _gold_context()
+    mcfg = load_models(models)
+    raw = load_raw_scores(exp.path("raw_scores"))
+    emb_path = Path("data/derived/embedding_preds.csv")
+    emb, emb_cond = None, "embedding"
+    if emb_path.exists():
+        emb = pd.read_csv(emb_path, dtype={"response_id": str, "call_id": str})
+        emb_cond = emb.condition.iloc[0]
+    cond, weights = build_condition_scores(raw, consensus, folds, responses, bank, mcfg.scorers, mcfg.aggregator,
+                                           exp.aggregation["rounding"], exp.aggregation["weights_level"],
+                                           replicate, emb, emb_cond)
+    cond.to_csv(exp.path("condition_scores"), index=False)
+    if not weights.empty:
+        weights.to_csv(exp.path("results_dir") / "weights_by_fold.csv", index=False)
+        write_table(summarize_weights(weights), exp.path("results_dir") / "weights_variability")
+    typer.echo(f"{cond.condition.nunique()} koşul -> {exp.path('condition_scores')}")
+    typer.echo("Koşullar: " + ", ".join(sorted(cond.condition.unique())))
+
+
+@app.command("run-ablation")
+def run_ablation(models: Path = ModelsOpt, yes: bool = typer.Option(False, "--yes", "-y"),
+                 no_batch: bool = False, offline_embedding_demo: bool = typer.Option(False),
+                 skip_embedding: bool = False, evaluate_after: bool = typer.Option(True, "--evaluate/--no-evaluate"),
+                 limit: Optional[int] = None):
+    """Tüm ablasyon koşullarını tek komutla üretir: LLM katmanları + gömme koşulu + koşul puanları (+ değerlendirme)."""
+    score(condition="ablation", subset="gold", models=models, replicate=1, yes=yes, no_batch=no_batch, limit=limit)
+    if not skip_embedding:
+        embed_baseline_cmd(offline_demo=offline_embedding_demo, models_subset=None)
+    build_conditions_cmd(models=models, replicate=1)
+    if evaluate_after:
+        evaluate_cmd(bootstrap_reps=None)
+
+
+@app.command("evaluate")
+def evaluate_cmd(bootstrap_reps: Optional[int] = typer.Option(None, help="Varsayılan: experiment.yaml (2000)")):
+    """Tüm koşullar için uyum metrikleri, GA'lar, W-X-B tablosu, eşleştirilmiş farklar ve grafikler -> results/."""
+    from .engine import load_call_ids
+    from .evaluate import enforce_logged, evaluate
+    from .pipeline import load_raw_scores
+    exp, bank, responses, folds, consensus = _gold_context()
+    ev = exp.evaluation
+    cond = pd.read_csv(exp.path("condition_scores"), dtype={"response_id": str, "call_ids": str})
+    cond, excluded = enforce_logged(cond, load_call_ids(exp.path("logs_dir")))
+    if len(excluded):
+        typer.echo(f"UYARI: kaydı olmayan {len(excluded)} puan raporlamadan çıkarıldı (results/excluded_unlogged.csv)", err=True)
+    excluded.to_csv(exp.path("results_dir") / "excluded_unlogged.csv", index=False)
+    wpath = exp.path("results_dir") / "weights_by_fold.csv"
+    tables = evaluate(cond, consensus, responses, bank, exp.path("results_dir"),
+                      bootstrap_reps or ev["bootstrap_reps"], exp.seeds["bootstrap"], ev["ci"], ev["reference"],
+                      ev["thresholds"], ev["paired_comparisons"], raw=load_raw_scores(exp.path("raw_scores")),
+                      manifests_dir=exp.path("results_dir") / "manifests",
+                      weights=pd.read_csv(wpath) if wpath.exists() else None)
+    from .utils import df_to_markdown
+    typer.echo(df_to_markdown(tables["summary_total_pooled"]))
+    typer.echo(f"Tablolar ve grafikler: {exp.path('results_dir')}/")
+
+
+@app.command("export-bias-data")
+def export_bias_data_cmd():
+    """R'daki karma model için düz yanlılık veri dosyası (+ metin öznitelikleri)."""
+    from .evaluate import export_bias_data
+    from .text_features import SpellChecker, text_features
+    exp, bank, responses, folds, consensus = _gold_context()
+    cond = pd.read_csv(exp.path("condition_scores"), dtype={"response_id": str})
+    gold = responses[responses.response_id.isin(folds.response_id)]
+    checker = SpellChecker()
+    feats = text_features(gold, checker)
+    p1, p2 = export_bias_data(cond, consensus, responses, bank, feats, exp.path("results_dir") / "bias", checker.method)
+    typer.echo(f"Yazım denetimi: {checker.method}\n-> {p1}\n-> {p2}\nÖrnek R betiği: scripts/bias_model.R")
+
+
+@app.command("final-scores")
+def final_scores_cmd(models: Path = ModelsOpt):
+    """Tam çerçeve ile operasyonel puanlar: altın set için kat dışı (CV) tahminler, diğer yanıtlar için tüm altın
+    set üzerinde öğrenilen ağırlıklar. Önce `score --condition full --subset all` çalıştırılmalıdır."""
+    from .ablation import build_condition_scores
+    from .aggregation import full_data_weights, round_clip_series, weighted_predict
+    from .data import criteria_frame
+    from .pipeline import load_raw_scores
+    exp, bank, responses, folds, consensus = _gold_context()
+    mcfg = load_models(models)
+    raw = load_raw_scores(exp.path("raw_scores"))
+    raw = raw[(raw.replicate == 1) & (raw.variant == "anchored") & (raw.layer == 2) & raw.score.notna()]
+    crit = criteria_frame(bank)
+    wide = (raw.pivot_table(index=["response_id", "criterion_id"], columns="model_key", values="score", aggfunc="first")
+            .reset_index().merge(responses[["response_id", "item_id"]], on="response_id")
+            .merge(crit, on=["item_id", "criterion_id"]))
+    cols = [m for m in mcfg.scorers if m in wide]
+    gw = wide[wide.response_id.isin(folds.response_id)].merge(
+        consensus[["response_id", "criterion_id", "consensus"]].rename(columns={"consensus": "y"}))
+    W = full_data_weights(gw, cols, exp.aggregation["weights_level"])
+    level = exp.aggregation["weights_level"]
+    wide["group"] = {"item": wide.item_id, "item_criterion": wide.item_id + "/" + wide.criterion_id,
+                     "global": pd.Series("all", index=wide.index)}[level]
+    preds = pd.Series(float("nan"), index=wide.index)
+    for g, idx in wide.groupby("group").groups.items():
+        w = W[W.group == g].set_index("model_key").weight.reindex(cols).to_numpy()
+        preds[idx] = weighted_predict(wide.loc[idx, cols].to_numpy(), w)
+    wide["score"] = round_clip_series(preds, wide.score_min, wide.score_max, exp.aggregation["rounding"])
+    wide["source"] = "tüm-altın-set-ağırlıkları"
+    cond, _ = build_condition_scores(load_raw_scores(exp.path("raw_scores")), consensus, folds, responses, bank,
+                                     mcfg.scorers, mcfg.aggregator, exp.aggregation["rounding"], level)
+    cv = cond[cond.condition == "full"].set_index(["response_id", "criterion_id"]).score
+    is_gold = wide.response_id.isin(folds.response_id)
+    wide.loc[is_gold, "score"] = [cv.get((r, c)) for r, c in zip(wide.response_id[is_gold], wide.criterion_id[is_gold])]
+    wide.loc[is_gold, "source"] = "altın-set-kat-dışı-CV"
+    out = wide[["response_id", "item_id", "criterion_id", "score", "source"]]
+    out.to_csv("data/derived/final_scores.csv", index=False)
+    W.to_csv(exp.path("results_dir") / "weights_full_gold.csv", index=False)
+    typer.echo(f"{out.response_id.nunique()} yanıt -> data/derived/final_scores.csv")
+
+
 def main():
     app()
 

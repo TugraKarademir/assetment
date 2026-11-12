@@ -168,3 +168,5 @@ logs/*
 results/runs/
 *.enc
 *.key
+results/bias/*
+!results/bias/.gitkeep

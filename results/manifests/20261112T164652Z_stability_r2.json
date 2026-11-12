@@ -1,18 +1,35 @@
 {
-  "run_id": "20261112T163140Z_full_r1",
-  "created_at_utc": "2026-11-12T16:31:40.626959+00:00",
-  "git_commit": "e8a5404f5cd4ff1f137d0f692ed9284c022d4a18",
+  "run_id": "20261112T164652Z_stability_r2",
+  "created_at_utc": "2026-11-12T16:46:52.673581+00:00",
+  "git_commit": "efcbeb1c0750d88edcf40641739795acf41733ad",
   "git_dirty": true,
   "git_dirty_files": [
-    "M src/scoring/cli.py",
-    "?? prompts/",
-    "?? results/manifests/",
-    "?? src/scoring/engine.py",
-    "?? src/scoring/layers.py",
-    "?? src/scoring/manifest.py",
-    "?? src/scoring/pipeline.py",
-    "?? src/scoring/providers/",
-    "?? src/scoring/schemas.py"
+    "M .gitignore",
+    " M README.md",
+    " D results/manifests/20261112T163116Z_full_r1.json",
+    " D results/manifests/20261112T163140Z_full_r1.json",
+    " M src/scoring/cli.py",
+    "?? config/spelling_whitelist.txt",
+    "?? data/",
+    "?? results/bias/",
+    "?? results/embedding_ordinal_coefficients.csv",
+    "?? results/manifests/20261112T164643Z_ablation_r1.json",
+    "?? results/manifests/20261112T164650Z_embedding_tfidf_demo.json",
+    "?? results/weights_by_fold.csv",
+    "?? results/weights_variability.csv",
+    "?? results/weights_variability.md",
+    "?? scripts/bias_model.R",
+    "?? scripts/fetch_tr_dictionary.sh",
+    "?? scripts/run_synthetic_demo.sh",
+    "?? src/scoring/ablation.py",
+    "?? src/scoring/aggregation.py",
+    "?? src/scoring/embedding_baseline.py",
+    "?? src/scoring/evaluate.py",
+    "?? src/scoring/metrics.py",
+    "?? src/scoring/text_features.py",
+    "?? tests/test_aggregation.py",
+    "?? tests/test_embedding.py",
+    "?? tests/test_metrics.py"
   ],
   "config_sha256": {
     "config/items.yaml": "b8c250de2bab287f3adc204d646764d3c22544bb4c916c37cec22e4e2856229c",
@@ -55,17 +72,17 @@
     "/home/user/voice_recorder/.venv/bin/scoring",
     "score",
     "--condition",
-    "full",
+    "stability",
+    "--replicate",
+    "2",
     "--models",
     "config/models.mock.yaml",
-    "-y",
-    "--limit",
-    "3"
+    "-y"
   ],
-  "condition": "full",
+  "condition": "stability",
   "subset": "gold",
-  "replicate": 1,
-  "n_responses": 12,
+  "replicate": 2,
+  "n_responses": 120,
   "models": {
     "scorers": [
       "mock_a",
@@ -162,8 +179,8 @@
   "plan": {
     "layer1_anchored": true,
     "layer1_zeroshot": false,
-    "layer2_anchored": true,
+    "layer2_anchored": false,
     "layer2_zeroshot": false,
-    "layer3": true
+    "layer3": false
   }
 }
