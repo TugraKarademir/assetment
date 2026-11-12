@@ -25,11 +25,24 @@ ANALİTİK RUBRİK (her ölçüt ayrı puanlanır):
   "item_id": "{{ item.item_id }}",
   "response_id": "{{ response_id }}",
   "criteria": [
-{% for c in item.criteria %}    {"criterion_id": "{{ c.criterion_id }}", "score": <{{ c.score_min }}–{{ c.score_max }} arası tamsayı>, "rationale": "<rubrik tanımlayıcısına dayanan 1–3 cümlelik gerekçe>", "rubric_evidence": "<yanıttan kısa, birebir alıntı; yoksa boş dize>"}{% if not loop.last %},{% endif %}
+{% for c in item.criteria %}    {"criterion_id": "{{ c.criterion_id }}", "score": <{{ c.score_min }}–{{ c.score_max }} arası tamsayı>, "rationale": "<{{ rationale_hint() }}>", "rubric_evidence": "<{{ evidence_hint() }}>"}{% if not loop.last %},{% endif %}
 {% endfor %}  ],
   "total": <ölçüt puanlarının toplamı>,
   "confidence": <0 ile 1 arasında, puanlamana ne kadar güvendiğin>{{ extra_fields }}
 }
+{%- endmacro %}
+
+{#- Gerekçe uzunluğu: experiment.yaml > prompt.rationale_style (short | standard). CPU'da çıktı süresi baskındır. -#}
+{% macro rationale_hint() -%}
+{%- if rationale_style == "short" -%}rubrik tanımlayıcısına dayanan TEK cümlelik gerekçe (en fazla 25 sözcük){%- else -%}rubrik tanımlayıcısına dayanan 1–3 cümlelik gerekçe{%- endif -%}
+{%- endmacro %}
+
+{% macro evidence_hint() -%}
+{%- if rationale_style == "short" -%}yanıttan en fazla 10 sözcüklük birebir alıntı; yoksa boş dize{%- else -%}yanıttan kısa, birebir alıntı; yoksa boş dize{%- endif -%}
+{%- endmacro %}
+
+{% macro reason_hint() -%}
+{%- if rationale_style == "short" -%}koruma ya da değiştirme nedenin, tek cümle{%- else -%}koruma ya da değiştirme nedenin, 1–3 cümle{%- endif -%}
 {%- endmacro %}
 
 {% macro scoring_rules() -%}

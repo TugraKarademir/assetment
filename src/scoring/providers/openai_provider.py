@@ -103,4 +103,6 @@ class OpenAICompatProvider(OpenAIProvider):
         base_url = os.environ.get(env)
         if not base_url:
             raise RuntimeError(f"{env} tanımlı değil (.env). Ör. http://localhost:11434/v1")
-        return cls(base_url=base_url, api_key=os.environ.get("LOCAL_API_KEY", "local"), max_retries=0)
+        # CPU sunucularda tek çağrı dakikalar sürebilir: zaman aşımı yapılandırılabilir (varsayılan 30 dk)
+        return cls(base_url=base_url, api_key=os.environ.get("LOCAL_API_KEY", "local"), max_retries=0,
+                   timeout=float(getattr(self.spec, "timeout_s", None) or 1800))

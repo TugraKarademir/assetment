@@ -43,18 +43,30 @@ uv run pytest                            # birim testleri
 
 **Hiçbir API anahtarı koda yazılmaz**; tümü `.env` dosyasından okunur. `.env` dosyası `.gitignore` kapsamındadır.
 
-## Tamamen yerel panel (araştırmanın seçimi)
+## Tamamen yerel panel — CPU sunucuları (araştırmanın seçimi)
 
-Puanlama, üniversitenin GPU sunucusunda çalışan **açık ağırlıklı** modellerle yapılır; öğrenci yanıtları
-sunucudan dışarı çıkmaz ve API maliyeti yoktur. Kurulum, bellek planı, tek GPU'da modelleri sırayla çalıştırma
-(`--only-models`, `--max-layer`) ve Ollama seçeneği (`--sequential-models`) için:
-**[docs/yerel_gpu_kurulumu.md](docs/yerel_gpu_kurulumu.md)**.
+Puanlama, kurumdaki **üç CPU sunucusunda** (GPU yok) çalışan açık ağırlıklı modellerle yapılır. Öğrenci yanıtları
+kurumdan dışarı çıkmaz ve API maliyeti yoktur. Her puanlayıcı ayrı bir sunucuda çalıştığından üç model aynı anda
+puanlar:
+
+- 40 çekirdekli sunucu: Qwen2.5-14B ve birleştirici Aya-Expanse-8B
+- 28 çekirdekli sunucu: Gemma-3-12B
+- 20 çekirdekli sunucu: Llama-3.1-8B
+
+Modeller llama.cpp `llama-server` ya da Ollama ile, 4-bit GGUF biçiminde sunulur.
+
+Kurulum, model indirme ve SHA-256 doğrulama, iş parçacığı ayarları, hız ölçümü ve süre planı için:
+**[docs/cpu_sunucu_kurulumu.md](docs/cpu_sunucu_kurulumu.md)**.
 
 ```bash
-uv run scoring check-models            # her uç nokta: bağlantı + geçerli JSON + bağlam uzunluğu testi
-uv run scoring run-ablation --limit 5 -y --no-evaluate   # kısa deneme
-uv run scoring run-ablation            # tam ablasyon
+uv run scoring check-models            # her sunucu: bağlantı + geçerli JSON + bağlam kesilmesi testi
+uv run scoring benchmark --n 2         # gerçek istemlerle hız ölçümü + tüm çalışmanın süre tahmini
+uv run scoring run-ablation            # tam ablasyon (CPU'da daraltılmış: score --condition ablation_core)
 ```
+
+CPU'da süreyi çıktı uzunluğu belirlediğinden gerekçeler varsayılan olarak tek cümledir
+(`experiment.yaml > prompt.rationale_style: short`). İleride GPU erişimi olursa `config/models.gpu.vllm.yaml` ve
+[docs/yerel_gpu_kurulumu.md](docs/yerel_gpu_kurulumu.md) hazırdır.
 
 ## Hızlı deneme (sentetik veri + mock modeller, anahtar gerekmez)
 
@@ -97,6 +109,7 @@ uv run scoring --help
 | `sample-gold [--per-item 300] [--synthetic]` | Katmanlı seçkisiz altın set, öğrenci düzeyinde 5 kat, puanlayıcı Excel'i, Label Studio JSON'u |
 | `check-leakage` | Çapaların altın setten gelmediğini denetler (ihlalde çıkış kodu 1) |
 | `check-models` | Her modelin uç noktasını sınar: bağlantı, JSON çıktısı, bağlam kesilmesi |
+| `benchmark [--n 2]` | Her sunucuda gerçek istemlerle hız ölçer, tüm çalışmanın süresini tahmin eder (`results/benchmark/`) |
 | `estimate-cost --condition ablation` | İstemleri gerçekten oluşturup token ve maliyet tahmini yapar |
 | `score --condition full --subset gold\|all [--replicate 2] [-y]` | LLM katmanlarını çalıştırır; önce maliyet tahmini gösterir ve onay ister |
 | `run-ablation [-y] [--offline-embedding-demo]` | **Tek komutla** tüm ablasyon koşulları + gömme koşulu + değerlendirme |
@@ -292,6 +305,9 @@ results/     tablolar (CSV + Markdown), grafikler, manifest kopyaları
 
 ## Sınırlılıklar
 
+- **CPU ve model boyutu:** GPU olmadığından 8–14B modeller kullanılır. Bunlar 24–70B modellerden ve ticari
+  modellerden belirgin biçimde zayıf olabilir; bu, bulguların yorumunda sınırlılık olarak yazılmalıdır. Tek
+  cümlelik gerekçe kipi Katman 2'de modellerin birbirinin gerekçesinden yararlanmasını sınırlayabilir.
 - **Yerel modeller:** Açık ağırlıklı modeller ticari öncü modellerden zayıf olabilir; bu, bulguların
   genellenebilirliği açısından raporlanmalıdır. Niceleme (AWQ/FP8/GGUF) puanları az da olsa etkileyebilir;
   kullanılan niceleme ve commit karması her çağrı kaydına (`model_meta`) yazılır.

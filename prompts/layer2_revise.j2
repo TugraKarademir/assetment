@@ -19,4 +19,4 @@ Sen yükseköğretimde "Yapay Zeka" dersini veren deneyimli bir öğretim eleman
 {% endfor %}{% endfor %}
 Her ölçüt için puanını koru ya da değiştir; gerekçeni rubriğe dayandır.
 
-{{ c.output_schema(item, response_id, extra_fields=',\n  "changed": <herhangi bir ölçüt puanını değiştirdiysen true, değilse false>,\n  "revision_reason": "<koruma ya da değiştirme nedenin, 1–3 cümle>"') }}
+{{ c.output_schema(item, response_id, extra_fields=',\n  "changed": <herhangi bir ölçüt puanını değiştirdiysen true, değilse false>,\n  "revision_reason": "<' ~ c.reason_hint() ~ '>"') }}

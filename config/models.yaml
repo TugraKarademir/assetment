@@ -1,75 +1,74 @@
-# VARSAYILAN PANEL: tamamen yerel, açık ağırlıklı (vLLM). Ticari API paneli: config/models.api.yaml
-# TAMAMEN YEREL, AÇIK AĞIRLIKLI panel — vLLM (önerilen: hızlı, sürekli toplu işleme).
-# Öğrenci yanıtları üniversite sunucusundan dışarı ÇIKMAZ; API maliyeti yoktur.
+# VARSAYILAN PANEL — TAMAMEN YEREL, AÇIK AĞIRLIKLI, YALNIZCA CPU, 3 SUNUCU
+# Öğrenci yanıtları kurum sunucularından dışarı ÇIKMAZ; API ve GPU gerekmez.
 #
-# Her model ayrı bir vLLM sunucusunda (ayrı port) çalışır; adresler .env içinden okunur:
-#   VLLM_QWEN_URL=http://gpu-sunucu:8001/v1   VLLM_GEMMA_URL=http://gpu-sunucu:8002/v1
-#   VLLM_MISTRAL_URL=http://gpu-sunucu:8003/v1 VLLM_LLAMA_URL=http://gpu-sunucu:8004/v1
-# Kurulum ve bellek planı: docs/yerel_gpu_kurulumu.md
+# Sunucu dağılımı (her puanlayıcı ayrı makinede -> üç model AYNI ANDA puanlar):
+#   40 çekirdekli sunucu : qwen  (en büyük model, 14B)  + aya (birleştirici; yalnızca Katman 3'te, puanlayıcılar bittikten sonra)
+#   28 çekirdekli sunucu : gemma (12B)
+#   20 çekirdekli sunucu : llama (8B)
+# Adresler .env içinden okunur:  QWEN_URL / GEMMA_URL / LLAMA_URL / AYA_URL = http://<sunucu>:<port>/v1
+# Sunucu yazılımı: llama.cpp `llama-server` (önerilen: iş parçacığı/NUMA/önek önbelleği denetimi) ya da Ollama.
+# Kurulum, hız ölçümü (`scoring benchmark`) ve süre planı: docs/cpu_sunucu_kurulumu.md
 #
-# TEKRAR ÜRETİLEBİLİRLİK: `model_revision` alanına Hugging Face'teki commit karmasını (40 karakter) yazın ve
-# vLLM'i aynı `--revision` ile başlatın. Bu alanlar her çağrı kaydına (`model_meta`) yazılır.
-# Model aileleri birbirinden farklıdır (Alibaba, Google, Mistral AI; birleştirici Meta).
+# Model adları Ollama etiketleridir; llama-server kullanılıyorsa aynı adı `--alias` ile verin.
+# Tekrar üretilebilirlik: model_revision alanına GGUF dosyasının SHA-256 özetini (llama.cpp) ya da
+# `ollama show <model> --modelfile` özetini yazın; her çağrı kaydına `model_meta` olarak girer.
+# Dört model dört farklı aileden gelir (Alibaba, Google, Meta, Cohere).
 
-scorers: [qwen, gemma, mistral]
-aggregator: llama
+scorers: [qwen, gemma, llama]
+aggregator: aya
 
 models:
   qwen:
     provider: openai_compat
-    model: Qwen/Qwen2.5-32B-Instruct-AWQ
+    model: qwen2.5:14b-instruct-q4_K_M
     family: Alibaba Qwen
     open_weights: true
-    model_revision: main            # <- commit karmasıyla sabitleyin
-    quantization: AWQ int4
-    served_by: vLLM
-    base_url_env: VLLM_QWEN_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
-    max_concurrency: 32
-    price_input_per_mtok: 0.0
-    price_output_per_mtok: 0.0
+    model_revision: "sha256:e47ad95dad6ff848b431053b375adb5d39321290ea2c638682577dafca87c008"   # GGUF (llama.cpp); Ollama ile çalışırken digest yazın
+    quantization: GGUF Q4_K_M
+    served_by: "CPU (40 çekirdek)"
+    base_url_env: QWEN_URL
+    timeout_s: 1800
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    max_concurrency: 4            # sunucudaki paralel yuva sayısıyla aynı olmalı (llama-server --parallel)
   gemma:
     provider: openai_compat
-    model: google/gemma-3-27b-it
+    model: gemma3:12b
     family: Google Gemma
     open_weights: true
-    model_revision: main
-    quantization: FP8 (vLLM --quantization fp8)
-    served_by: vLLM
-    base_url_env: VLLM_GEMMA_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
-    max_concurrency: 32
-    price_input_per_mtok: 0.0
-    price_output_per_mtok: 0.0
-  mistral:
-    provider: openai_compat
-    model: mistralai/Mistral-Small-3.1-24B-Instruct-2503
-    family: Mistral AI
-    open_weights: true
-    model_revision: main
-    quantization: FP8 (vLLM --quantization fp8)
-    served_by: vLLM
-    base_url_env: VLLM_MISTRAL_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
-    max_concurrency: 32
-    price_input_per_mtok: 0.0
-    price_output_per_mtok: 0.0
+    model_revision: "sha256:fc57f67efa46d711c346e587cbef7d049e95f3df8db2eb2271153343ef0acc7b"   # GGUF (llama.cpp); Ollama ile çalışırken digest yazın
+    quantization: GGUF Q4_K_M
+    served_by: "CPU (28 çekirdek)"
+    base_url_env: GEMMA_URL
+    timeout_s: 1800
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    max_concurrency: 3
   llama:
     provider: openai_compat
-    model: meta-llama/Llama-3.3-70B-Instruct      # erişim izni (lisans onayı) gerektirir
+    model: llama3.1:8b-instruct-q4_K_M
     family: Meta Llama
     open_weights: true
-    model_revision: main
-    quantization: FP8 (vLLM --quantization fp8)  # ya da topluluk AWQ sürümü
-    served_by: vLLM
-    base_url_env: VLLM_LLAMA_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
-    max_concurrency: 16
-    price_input_per_mtok: 0.0
-    price_output_per_mtok: 0.0
+    model_revision: "sha256:7b064f5842bf9532c91456deda288a1b672397a54fa729aa665952863033557c"   # GGUF (llama.cpp); Ollama ile çalışırken digest yazın
+    quantization: GGUF Q4_K_M
+    served_by: "CPU (20 çekirdek)"
+    base_url_env: LLAMA_URL
+    timeout_s: 1800
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    max_concurrency: 2
+  aya:
+    provider: openai_compat
+    model: aya-expanse:8b         # Cohere; Türkçe dahil 23 dil; CC-BY-NC (araştırma için uygun)
+    family: Cohere Aya
+    open_weights: true
+    model_revision: "sha256:9592bad943fe56cf93200286a0a4b00a158cd84a408f227b9978ec5879002fb8"   # GGUF (llama.cpp); Ollama ile çalışırken digest yazın
+    quantization: GGUF Q4_K_M
+    served_by: "CPU (40 çekirdek)"
+    base_url_env: AYA_URL
+    timeout_s: 1800
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    max_concurrency: 4
 
 retry:
   max_validation_retries: 2
-  max_api_retries: 6
-  backoff_initial_seconds: 2
-  backoff_max_seconds: 60
+  max_api_retries: 4
+  backoff_initial_seconds: 10
+  backoff_max_seconds: 120

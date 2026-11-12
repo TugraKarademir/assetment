@@ -1,3 +1,4 @@
+# GPU PANELİ (Ollama) — şu an kullanılmıyor. Varsayılan: config/models.yaml (CPU, 3 sunucu).
 # TAMAMEN YEREL, AÇIK AĞIRLIKLI panel — Ollama (en kolay kurulum; vLLM'den belirgin biçimde yavaş).
 # Tüm modeller tek Ollama sunucusundan sunulur: LOCAL_BASE_URL=http://gpu-sunucu:11434/v1
 # ÖNEMLİ: Ollama varsayılan bağlam uzunluğu istemlerimiz için KISADIR ve fazlası sessizce kesilir.

@@ -25,10 +25,13 @@ ROW_COLUMNS = ["run_id", "replicate", "variant", "layer", "model_key", "item_id"
 class PromptRenderer:
     SPLIT = "=== USER ==="
 
-    def __init__(self, prompts_dir: str | Path = "prompts"):
+    def __init__(self, prompts_dir: str | Path = "prompts", rationale_style: str = "standard"):
+        if rationale_style not in ("short", "standard"):
+            raise ValueError(f"rationale_style 'short' ya da 'standard' olmalı: {rationale_style}")
         self.dir = Path(prompts_dir)
         self.env = Environment(loader=FileSystemLoader(str(self.dir)), undefined=StrictUndefined,
                                trim_blocks=False, lstrip_blocks=False, keep_trailing_newline=True)
+        self.env.globals["rationale_style"] = rationale_style
 
     def template_sha(self, name: str) -> str:
         src = (self.dir / name).read_text(encoding="utf-8") + (self.dir / "_common.j2").read_text(encoding="utf-8")

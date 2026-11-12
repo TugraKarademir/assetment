@@ -1,0 +1,75 @@
+# GPU PANELİ (vLLM) — şu an kullanılmıyor (sunucularda GPU yok). Varsayılan: config/models.yaml (CPU, 3 sunucu).
+# TAMAMEN YEREL, AÇIK AĞIRLIKLI panel — vLLM (önerilen: hızlı, sürekli toplu işleme).
+# Öğrenci yanıtları üniversite sunucusundan dışarı ÇIKMAZ; API maliyeti yoktur.
+#
+# Her model ayrı bir vLLM sunucusunda (ayrı port) çalışır; adresler .env içinden okunur:
+#   VLLM_QWEN_URL=http://gpu-sunucu:8001/v1   VLLM_GEMMA_URL=http://gpu-sunucu:8002/v1
+#   VLLM_MISTRAL_URL=http://gpu-sunucu:8003/v1 VLLM_LLAMA_URL=http://gpu-sunucu:8004/v1
+# Kurulum ve bellek planı: docs/yerel_gpu_kurulumu.md
+#
+# TEKRAR ÜRETİLEBİLİRLİK: `model_revision` alanına Hugging Face'teki commit karmasını (40 karakter) yazın ve
+# vLLM'i aynı `--revision` ile başlatın. Bu alanlar her çağrı kaydına (`model_meta`) yazılır.
+# Model aileleri birbirinden farklıdır (Alibaba, Google, Mistral AI; birleştirici Meta).
+
+scorers: [qwen, gemma, mistral]
+aggregator: llama
+
+models:
+  qwen:
+    provider: openai_compat
+    model: Qwen/Qwen2.5-32B-Instruct-AWQ
+    family: Alibaba Qwen
+    open_weights: true
+    model_revision: main            # <- commit karmasıyla sabitleyin
+    quantization: AWQ int4
+    served_by: vLLM
+    base_url_env: VLLM_QWEN_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    max_concurrency: 32
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+  gemma:
+    provider: openai_compat
+    model: google/gemma-3-27b-it
+    family: Google Gemma
+    open_weights: true
+    model_revision: main
+    quantization: FP8 (vLLM --quantization fp8)
+    served_by: vLLM
+    base_url_env: VLLM_GEMMA_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    max_concurrency: 32
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+  mistral:
+    provider: openai_compat
+    model: mistralai/Mistral-Small-3.1-24B-Instruct-2503
+    family: Mistral AI
+    open_weights: true
+    model_revision: main
+    quantization: FP8 (vLLM --quantization fp8)
+    served_by: vLLM
+    base_url_env: VLLM_MISTRAL_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    max_concurrency: 32
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+  llama:
+    provider: openai_compat
+    model: meta-llama/Llama-3.3-70B-Instruct      # erişim izni (lisans onayı) gerektirir
+    family: Meta Llama
+    open_weights: true
+    model_revision: main
+    quantization: FP8 (vLLM --quantization fp8)  # ya da topluluk AWQ sürümü
+    served_by: vLLM
+    base_url_env: VLLM_LLAMA_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    max_concurrency: 16
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+
+retry:
+  max_validation_retries: 2
+  max_api_retries: 6
+  backoff_initial_seconds: 2
+  backoff_max_seconds: 60

@@ -23,6 +23,8 @@ CONDITION_PLANS: dict[str, LayerPlan] = {
     "full_llm_aggregator": LayerPlan(True, False, True, False, True),
     "full": LayerPlan(True, False, True, False, True),
     "ablation": LayerPlan(True, True, True, True, True),
+    # CPU için daraltılmış ablasyon: K2 çapasız atlanır (koşul 4 "full_zeroshot" üretilmez, ~%23 daha az çağrı)
+    "ablation_core": LayerPlan(True, True, True, False, True),
     "stability": LayerPlan(True, False, False, False, False),
 }
 KEY_COLS = ["replicate", "variant", "layer", "model_key", "response_id", "criterion_id"]
@@ -54,7 +56,7 @@ async def run_pipeline(responses: pd.DataFrame, bank: ItemBank, models: ModelsCo
                        plan: LayerPlan, replicate: int, run_id: str, condition: str, use_batch: bool = True,
                        include_anchors_later_layers: bool = True, sequential_models: bool = False,
                        only_models: set[str] | None = None, max_layer: int = 3) -> tuple[pd.DataFrame, dict]:
-    renderer = PromptRenderer()
+    renderer = PromptRenderer(rationale_style=exp.prompt_options.get("rationale_style", "standard"))
     engine = CallEngine(models, run_id, exp.path("cache"), exp.path("logs_dir"), use_batch=use_batch,
                         sequential_models=sequential_models, only_models=only_models)
     full_panel = exp.aggregation.get("require_full_panel", True)
@@ -105,7 +107,7 @@ async def run_pipeline(responses: pd.DataFrame, bank: ItemBank, models: ModelsCo
 def estimate_cost(responses: pd.DataFrame, bank: ItemBank, models: ModelsConfig, exp: Experiment,
                   plan: LayerPlan, replicate: int = 1) -> pd.DataFrame:
     """İstemleri gerçekten oluşturarak token sayısını tahmin eder; Katman 1 için önbellekteki çağrıları düşer."""
-    renderer = PromptRenderer()
+    renderer = PromptRenderer(rationale_style=exp.prompt_options.get("rationale_style", "standard"))
     cpt = exp.cost["chars_per_token"]
     out_tok = exp.cost["expected_output_tokens"]
     engine = CallEngine(models, "estimate", exp.path("cache"), exp.path("logs_dir"))

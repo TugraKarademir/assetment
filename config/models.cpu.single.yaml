@@ -1,3 +1,4 @@
+# TEK CPU SUNUCULU panel (tüm modeller aynı makinede, --sequential-models ile). Varsayılan: config/models.yaml (3 sunucu).
 # GPU'SUZ SUNUCU (yalnızca CPU) — Ollama for Windows/Linux. Örn. Huawei RH2288H V3, 2× Xeon E5-2640 v4, 64 GB RAM.
 # CPU'da üretim hızı bellek bant genişliğiyle sınırlıdır: 7–12B modeller (4-bit) kullanılabilir; 24B+ modeller
 # çağrı başına dakikalar sürer ve 30.000+ çağrılık bir çalışma için uygun değildir.

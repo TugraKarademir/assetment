@@ -171,6 +171,11 @@ class Experiment(BaseModel):
     embedding: dict[str, Any]
     evaluation: dict[str, Any]
     cost: dict[str, Any]
+    prompt: dict[str, Any] = Field(default_factory=dict)
+
+    @property
+    def prompt_options(self) -> dict[str, Any]:
+        return self.prompt or {}
 
     def path(self, key: str) -> Path:
         p = Path(self.paths[key])

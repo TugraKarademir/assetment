@@ -23,6 +23,11 @@ paths:
   logs_dir: logs
   results_dir: results
 
+prompt:
+  # short: tek cümlelik gerekçe + ≤10 sözcüklük alıntı (CPU sunucularda çıktı süresini ~yarıya indirir)
+  # standard: 1–3 cümlelik gerekçe. Değişiklik istem metnini (dolayısıyla önbellek anahtarını) değiştirir.
+  rationale_style: short
+
 gold:
   per_item: 300          # sentetik denemede yanıt sayısından büyükse otomatik küçültülür
   synthetic_per_item: 30
@@ -77,4 +82,4 @@ evaluation:
 
 cost:
   chars_per_token: 3.5    # Türkçe metin için kaba token tahmini
-  expected_output_tokens: {layer1: 450, layer2: 500, layer3: 450}
+  expected_output_tokens: {layer1: 260, layer2: 300, layer3: 260}   # rationale_style: short için

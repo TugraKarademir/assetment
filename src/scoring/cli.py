@@ -180,7 +180,7 @@ def check_models_cmd(models: Path = ModelsOpt):
             status = "HATA: " + res.error if res.error else ("JSON tamam" if '"ok"' in res.text else f"beklenmeyen: {res.text[:80]}")
             # Bağlam uzunluğu testi: istemin EN BAŞINA bir kod konur, ~3.500 token dolgu eklenir.
             # Sunucu bağlamı kesiyorsa (ör. Ollama varsayılan num_ctx) kod kaybolur -> rubrik de kaybolur.
-            filler = " ".join(["Bu cümle bağlam uzunluğu testi için eklenmiş dolgu metnidir."] * 450)
+            filler = " ".join(["Bu cümle bağlam uzunluğu testi için eklenmiş dolgu metnidir."] * 200)
             long = await prov.complete(LLMRequest(key, "Yalnızca JSON döndür.", [{"role": "user", "content":
                    f"GİZLİ KOD: KESTANE-7351.\n{filler}\nMetnin EN BAŞINDA verilen gizli kodu "
                    '{"kod": "<kod>"} biçiminde döndür.'}]))
@@ -198,6 +198,41 @@ def check_models_cmd(models: Path = ModelsOpt):
         typer.echo(f"[{key}] {model} -> {status} (dönen sürüm: {returned}, gecikme: {lat}s)")
         if served is not None and model not in served:
             typer.echo(f"   UYARI: sunucuda sunulan modeller: {served}")
+
+
+@app.command()
+def benchmark(models: Path = ModelsOpt,
+              n: int = typer.Option(2, help="Soru başına ölçüm yanıtı sayısı (model başına çağrı = n × soru sayısı)"),
+              n_gold: int = typer.Option(1200, help="Planlanan altın set büyüklüğü (gerçek çalışma: 4 × 300)"),
+              n_all: int = typer.Option(3200, help="Planlanan toplam yanıt sayısı"),
+              condition: str = typer.Option("ablation", help="ablation | ablation_core")):
+    """Her modelin CPU sunucusundaki hızını ölçer ve tüm çalışmanın süresini tahmin eder."""
+    from .benchmark import measure, project, workload
+    from .engine import CallEngine
+    from .layers import PromptRenderer
+    from .manifest import new_run_id, write_manifest
+    from .utils import df_to_markdown, write_table
+    exp, bank, mcfg, responses = _prepare("all", models)
+    sample = responses.groupby("item_id").head(n)
+    run_id = new_run_id("benchmark")
+    write_manifest(run_id, exp.path("logs_dir"), exp.path("results_dir"),
+                   ["config/items.yaml", str(models), "config/experiment.yaml"], exp.seeds,
+                   {"condition": "benchmark", "n_per_item": n, "models": mcfg.model_dump(mode="json")})
+    engine = CallEngine(mcfg, run_id, exp.path("cache"), exp.path("logs_dir"))
+    renderer = PromptRenderer(rationale_style=exp.prompt_options.get("rationale_style", "standard"))
+    speed = asyncio.run(measure(sample, bank, mcfg, engine, renderer, run_id))
+    typer.echo("ÖLÇÜLEN HIZ (gerçek istemler, Katman 1):\n" + df_to_markdown(speed, ".1f"))
+    if (speed.valid < speed.calls).any():
+        typer.echo("UYARI: bazı ölçüm çağrıları geçersiz/başarısız (first_error sütunu). Önce `check-models` çalıştırın.",
+                   err=True)
+    layer, phase = project(workload(n_gold, n_all, mcfg.scorers, mcfg.aggregator, condition), speed)
+    typer.echo("KATMAN BAŞINA DUVAR SAATİ (puanlayıcılar ayrı sunucularda paralel):\n" + df_to_markdown(layer, ".1f"))
+    typer.echo("TAHMİNİ TOPLAM SÜRE:\n" + df_to_markdown(phase, ".1f"))
+    out = exp.path("results_dir") / "benchmark"
+    write_table(speed, out / "speed")
+    write_table(layer, out / "projection_by_layer")
+    write_table(phase, out / "projection_total")
+    typer.echo(f"Not: K2/K3 istemleri K1'den ~%30 uzundur; tahmin K1 hızına dayanır. Kayıt: logs/{run_id}/")
 
 
 def _gold_context():

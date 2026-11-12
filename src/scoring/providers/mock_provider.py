@@ -46,6 +46,7 @@ class MockProvider(Provider):
         ctx = req.metadata["mock"]
         attempt = req.metadata.get("attempt", 0)
         rep = req.metadata.get("replicate", 1)
+        rep = rep if isinstance(rep, int) else 2   # ölçüm (benchmark) etiketleri gibi sayısal olmayan replikasyonlar
         p = self.spec.params
         rng = self._rng(ctx["response_id"], ctx["task"], ctx.get("variant", ""), attempt, rep)
         n_in = int(len(req.prompt_text()) / 3.5)

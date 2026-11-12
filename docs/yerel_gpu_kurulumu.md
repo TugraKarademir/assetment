@@ -1,3 +1,6 @@
+> **Not:** Kurumdaki sunucularda GPU olmadığından varsayılan düzen CPU'dur: [cpu_sunucu_kurulumu.md](cpu_sunucu_kurulumu.md).
+> Bu kılavuz ileride GPU erişimi olursa kullanılmak üzere saklanmıştır.
+
 # Tamamen yerel, açık ağırlıklı panel: GPU sunucusu kurulumu
 
 Bu kılavuz, puanlamayı **hiçbir ticari API kullanmadan**, üniversitenin GPU sunucusunda çalışan açık ağırlıklı
@@ -19,7 +22,7 @@ temiz seçenektir.
   "düşünme" kipini kapatın: `params: {extra_body: {chat_template_kwargs: {enable_thinking: false}}}`.
 - **Erişim izni gereken modeller:** Llama ve Gemma, Hugging Face'te lisans onayı ister. Sunucuda bir kez
   `huggingface-cli login` yapılmalıdır. Bu jeton yalnızca sunucuda tutulur, bu depoya girmez.
-- Yapılandırma dosyaları: `config/models.yaml` (önerilen) ve `config/models.local.ollama.yaml`.
+- Yapılandırma dosyaları: `config/models.gpu.vllm.yaml` (önerilen) ve `config/models.gpu.ollama.yaml`.
 
 ## 2. Donanıma göre plan
 
@@ -79,9 +82,9 @@ LOCAL_API_KEY=<sunucuda verdiğiniz anahtar>
 ```
 
 ```bash
-uv run scoring check-models --models config/models.yaml     # bağlantı + JSON + bağlam testi
-uv run scoring run-ablation --models config/models.yaml --limit 5 -y --no-evaluate   # kısa deneme
-uv run scoring run-ablation --models config/models.yaml          # tam çalıştırma
+uv run scoring check-models --models config/models.gpu.vllm.yaml     # bağlantı + JSON + bağlam testi
+uv run scoring run-ablation --models config/models.gpu.vllm.yaml --limit 5 -y --no-evaluate   # kısa deneme
+uv run scoring run-ablation --models config/models.gpu.vllm.yaml          # tam çalıştırma
 ```
 
 ## 3b. vLLM — tek GPU'da modeller sırayla
@@ -92,7 +95,7 @@ Aynı anda yalnızca bir model sunulur. `--only-models` yalnızca o modeli çağ
 olduğunda yürütülür (`experiment.yaml > aggregation.require_full_panel`).
 
 ```bash
-M=config/models.yaml
+M=config/models.gpu.vllm.yaml
 # Katman 1: her model sırayla (her satırdan önce sunucuda yalnızca o modeli başlatın)
 uv run scoring score --condition ablation --models $M --only-models qwen    --max-layer 1 -y
 uv run scoring score --condition ablation --models $M --only-models gemma   --max-layer 1 -y
@@ -128,8 +131,8 @@ ollama pull qwen2.5:32b-instruct-q4_K_M; ollama pull gemma3:27b; ollama pull mis
 
 ```bash
 # Bu depoda: .env -> LOCAL_BASE_URL=http://gpu-sunucu:11434/v1
-uv run scoring check-models --models config/models.local.ollama.yaml
-uv run scoring run-ablation --models config/models.local.ollama.yaml --sequential-models -y
+uv run scoring check-models --models config/models.gpu.ollama.yaml
+uv run scoring run-ablation --models config/models.gpu.ollama.yaml --sequential-models -y
 ```
 
 `--sequential-models` modelleri aynı anda değil sırayla çağırır; Ollama böylece her katmanda her modeli bir kez
@@ -172,7 +175,7 @@ için `--limit 2` ile ölçün ve kayıttaki `latency_s` değerine bakın.
 
 Öneriler:
 - Bu sunucuda **gömme koşulu** rahatça çalışır (CPU yeterli).
-- LLM katmanları için `config/models.local.cpu.yaml` (7–12B modeller, Ollama) ile boru hattını gerçek
+- LLM katmanları için `config/models.cpu.single.yaml` (7–12B modeller, Ollama) ile boru hattını gerçek
   modellerle sınayın ve küçük bir pilot yapın: `--limit 10 --sequential-models`.
 - Asıl çalışma için GPU erişimi önerilir:
   - **TÜBİTAK ULAKBİM TRUBA**: akademisyenlere ücretsiz GPU (A100 vb.) hesaplama sağlar. Verinin üçüncü taraf bir

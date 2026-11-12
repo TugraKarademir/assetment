@@ -1,0 +1,158 @@
+{
+  "run_id": "20261112T173317Z_full_r1",
+  "created_at_utc": "2026-11-12T17:33:17.167402+00:00",
+  "git_commit": "6b7e549908d1bf04f8e4b4514851c4b382cda418",
+  "git_dirty": true,
+  "git_dirty_files": [
+    "M config/experiment.yaml",
+    "RM config/models.local.cpu.yaml -> config/models.cpu.single.yaml",
+    "RM config/models.local.ollama.yaml -> config/models.gpu.ollama.yaml",
+    "RM config/models.yaml -> config/models.gpu.vllm.yaml",
+    " M docs/yerel_gpu_kurulumu.md",
+    " M prompts/_common.j2",
+    " M prompts/layer2_revise.j2",
+    " M src/scoring/cli.py",
+    " M src/scoring/config.py",
+    " M src/scoring/layers.py",
+    " M src/scoring/pipeline.py",
+    " M src/scoring/providers/mock_provider.py",
+    " M src/scoring/providers/openai_provider.py",
+    "?? config/models.yaml",
+    "?? results/benchmark/",
+    "?? results/manifests/20261112T172302Z_benchmark.json",
+    "?? results/manifests/20261112T172325Z_benchmark.json",
+    "?? src/scoring/benchmark.py"
+  ],
+  "config_sha256": {
+    "config/items.yaml": "b8c250de2bab287f3adc204d646764d3c22544bb4c916c37cec22e4e2856229c",
+    "/tmp/claude-0/-home-user-voice-recorder/9e5588d5-3915-5101-af53-9b09c9fbd881/scratchpad/models.cpu.test.yaml": "4c6a71f5fd615f6edbf2667d39bd1fba05fc92c9b0fad31a41b54ccd18cb8e3d",
+    "config/experiment.yaml": "dfc607bfbebe7af5569ba648e11c35204125cb2cad47c313923b376ac42fa3e0",
+    "config/moodle_columns.yaml": "71f36371c753c9aadb4d10a8214c9d5c69367d5171fc426ee5cc28f0885422d7",
+    "prompts/_common.j2": "ec4dedee716ef83cb81da50e1d5765d5033c395dcf0d87ca3e9c0d20abb79512",
+    "prompts/layer1_score.j2": "ad90df10d3b257d66537886f3cba91b21fb2aae3d50f852beb385f1af70a90be",
+    "prompts/layer1_score_zeroshot.j2": "4033f108905a4a7590eeb806a17448da924cd08b8f59c1c1e502706d0473666b",
+    "prompts/layer2_revise.j2": "507cdbf54b459d181ec00249360545a93de65d72760e7c55982f2bb23ea70533",
+    "prompts/layer3_aggregate.j2": "32d556d32e0969233019d5b3db98edd601f6c59018bdfc96e2adbf68484b35ea"
+  },
+  "seeds": {
+    "global": 20261112,
+    "gold_sampling": 4242,
+    "folds": 777,
+    "bootstrap": 2024,
+    "layer2_order": 99
+  },
+  "python": "3.13.18 (main, Oct 26 2026, 14:08:19) [Clang 23.1.3 ]",
+  "platform": "Linux-6.18.44-fc-v378-x86_64-with-glibc2.39",
+  "packages": {
+    "layered-scoring": "0.1.0",
+    "openai": "3.49.0",
+    "anthropic": "2.8.0",
+    "google-genai": "3.2.0",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "pydantic": "2.14.3",
+    "jinja2": "3.1.6",
+    "typer": "0.29.1",
+    "sentence-transformers": "6.3.0",
+    "torch": "2.15.0",
+    "spylls": "0.1.7",
+    "matplotlib": "3.11.2"
+  },
+  "argv": [
+    "/home/user/voice_recorder/.venv/bin/scoring",
+    "score",
+    "--condition",
+    "full",
+    "--models",
+    "/tmp/claude-0/-home-user-voice-recorder/9e5588d5-3915-5101-af53-9b09c9fbd881/scratchpad/models.cpu.test.yaml",
+    "--limit",
+    "1",
+    "-y"
+  ],
+  "condition": "full",
+  "subset": "gold",
+  "replicate": 1,
+  "n_responses": 4,
+  "models": {
+    "scorers": [
+      "t1",
+      "t2",
+      "t3"
+    ],
+    "aggregator": "t1",
+    "models": {
+      "t1": {
+        "key": "t1",
+        "provider": "openai_compat",
+        "model": "qwen2.5-1.5b-test",
+        "family": "",
+        "open_weights": true,
+        "params": {
+          "temperature": 0,
+          "seed": 1,
+          "max_tokens": 600
+        },
+        "batch": false,
+        "max_concurrency": 1,
+        "base_url_env": "TEST_URL",
+        "price_input_per_mtok": 0.0,
+        "price_output_per_mtok": 0.0,
+        "timeout_s": 900,
+        "quantization": "GGUF Q4_K_M",
+        "served_by": "llama.cpp CPU"
+      },
+      "t2": {
+        "key": "t2",
+        "provider": "openai_compat",
+        "model": "qwen2.5-1.5b-test",
+        "family": "",
+        "open_weights": true,
+        "params": {
+          "temperature": 0,
+          "seed": 2,
+          "max_tokens": 600
+        },
+        "batch": false,
+        "max_concurrency": 1,
+        "base_url_env": "TEST_URL",
+        "price_input_per_mtok": 0.0,
+        "price_output_per_mtok": 0.0,
+        "timeout_s": 900
+      },
+      "t3": {
+        "key": "t3",
+        "provider": "openai_compat",
+        "model": "qwen2.5-1.5b-test",
+        "family": "",
+        "open_weights": true,
+        "params": {
+          "temperature": 0,
+          "seed": 3,
+          "max_tokens": 600
+        },
+        "batch": false,
+        "max_concurrency": 1,
+        "base_url_env": "TEST_URL",
+        "price_input_per_mtok": 0.0,
+        "price_output_per_mtok": 0.0,
+        "timeout_s": 900
+      }
+    },
+    "retry": {
+      "max_validation_retries": 2,
+      "max_api_retries": 2,
+      "backoff_initial_seconds": 1.0,
+      "backoff_max_seconds": 5.0
+    },
+    "source_path": "/tmp/claude-0/-home-user-voice-recorder/9e5588d5-3915-5101-af53-9b09c9fbd881/scratchpad/models.cpu.test.yaml"
+  },
+  "plan": {
+    "layer1_anchored": true,
+    "layer1_zeroshot": false,
+    "layer2_anchored": true,
+    "layer2_zeroshot": false,
+    "layer3": true
+  }
+}
