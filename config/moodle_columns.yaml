@@ -1,0 +1,40 @@
+# Moodle "Sınav > Sonuçlar > Yanıtlar" raporu için esnek sütun eşlemesi.
+# Başlıklar Türkçe/İngilizce arayüze göre değişir; eşleştirme büyük/küçük harf, boşluk ve
+# Türkçe karakter farklarına duyarsızdır.
+#
+# GÜVENLİK: Okuyucu "izin listesi" (allowlist) yaklaşımı kullanır. Aşağıda tanımlı yanıt sütunları
+# dışındaki her sütun (ad, soyad, e-posta, kullanıcı adı, numara, IP, kurum, bölüm ...) çıktıya
+# ASLA taşınmaz. Kimlik sütunları yalnızca öğrenci kodu üretmek ve metin içi maskeleme için okunur.
+
+identity:
+  last_name:  ["Soyadı", "Soyad", "Surname", "Last name"]
+  first_name: ["Adı", "Ad", "First name"]
+  email:      ["E-posta adresi", "E-posta", "Email address", "Email"]
+  id_number:  ["ID numarası", "Öğrenci numarası", "ID number", "Student number"]
+  username:   ["Kullanıcı adı", "Username"]
+
+meta:
+  state:     ["Durum", "State"]
+  started:   ["Başlangıç", "Başladı", "Started on"]
+  completed: ["Tamamlandı", "Bitti", "Completed"]
+
+# Yanıt sütunları: yakalanan numara soru sırasıdır.
+response_patterns:
+  - '^yan[ıi]t\s*(\d+)$'
+  - '^response\s*(\d+)$'
+
+# Moodle soru sırası -> items.yaml item_id
+item_map:
+  1: S1
+  2: S2
+  3: S3
+  4: S4
+
+# Yalnızca bu durumdaki denemeler alınır (boş liste: hepsi).
+finished_states: ["Bitti", "Tamamlandı", "Finished"]
+
+# Bu değerleri içeren satırlar atılır (Moodle rapor sonundaki ortalama satırı vb.).
+drop_row_markers: ["Genel ortalama", "Overall average"]
+
+# Boş/eksik yanıt işaretleri
+empty_markers: ["-", "", "Yanıt verilmedi", "Not answered"]

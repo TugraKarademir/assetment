@@ -1,0 +1,73 @@
+# Deney ayarları. Bu dosyanın SHA-256 özeti her run_manifest.json içine yazılır.
+seeds:
+  global: 20261112
+  gold_sampling: 4242
+  folds: 777
+  bootstrap: 2024
+  layer2_order: 99      # Katman 2/3'te Model A/B/C sırasının rastgeleleştirilmesi
+
+paths:
+  raw_export: data/raw/moodle_export.csv
+  responses: data/processed/responses.csv          # anonim, maskelenmiş yanıtlar
+  mapping: data/private/mapping.enc                # şifreli kod <-> kimlik eşlemesi
+  pii_report_private: data/private/pii_report.csv  # maskelenen değerlerin kendisi (gizli)
+  pii_summary: results/pii_summary.csv             # yalnızca sayımlar (paylaşılabilir)
+  human_scores: data/human_scores.csv
+  gold_sample: data/derived/gold_sample.csv
+  gold_folds: data/derived/gold_folds.csv
+  gold_excel: data/derived/gold_rating_sheet.xlsx
+  gold_labelstudio: data/derived/gold_labelstudio.json
+  raw_scores: data/derived/raw_scores.csv          # model ham puanları (gerekçeler öğrenci metninden alıntı içerir -> gizli)
+  condition_scores: data/derived/condition_scores.csv
+  cache: logs/cache.sqlite
+  logs_dir: logs
+  results_dir: results
+
+gold:
+  per_item: 300          # sentetik denemede yanıt sayısından büyükse otomatik küçültülür
+  synthetic_per_item: 30
+  strata_bins: 5         # resmî toplam puana göre katman sayısı (eşit frekanslı)
+  n_folds: 5
+  # Altın set uzlaşı puanı: iki puanlayıcı aynıysa o puan; farklıysa hakem; hakem yoksa ortalama (yuvarlanır)
+  consensus: adjudicator_or_mean
+
+aggregation:
+  rounding: half_up      # half_up | half_even
+  weights_level: item    # item | item_criterion | global
+  weights_method: cls    # kısıtlı en küçük kareler (w>=0, toplam=1)
+
+embedding:
+  models:
+    - name: intfloat/multilingual-e5-large
+      query_prefix: "query: "
+      passage_prefix: "passage: "
+    - name: intfloat/multilingual-e5-base
+      query_prefix: "query: "
+      passage_prefix: "passage: "
+    - name: sentence-transformers/paraphrase-multilingual-mpnet-base-v2
+    - name: sentence-transformers/distiluse-base-multilingual-cased-v1
+    - name: BAAI/bge-m3
+  # Yalnızca İngilizce modeller ve ince ayarsız ham BERT burada YASAKTIR (kod da denetler).
+  forbidden_patterns: ["all-mpnet", "all-MiniLM", "bert-base-uncased", "bert-base-cased", "bert-base-multilingual"]
+  ordinal_l2: 1.0
+  softmax_temperature: 0.05
+
+evaluation:
+  bootstrap_reps: 2000
+  ci: 0.95
+  reference: consensus   # makine puanlarının karşılaştırıldığı insan puanı: consensus | rater1
+  thresholds:            # Williamson, Xi & Breyer (2012)
+    qwk_min: 0.70
+    qwk_degradation_max: 0.10
+    smd_abs_max: 0.15
+  paired_comparisons:
+    - [full, panel_vote]
+    - [full, full_no_revision]
+    - [full, full_equal_weight]
+    - [full, full_llm_aggregator]
+    - [full, embedding]
+    - [full, full_zeroshot]
+
+cost:
+  chars_per_token: 3.5    # Türkçe metin için kaba token tahmini
+  expected_output_tokens: {layer1: 450, layer2: 500, layer3: 450}

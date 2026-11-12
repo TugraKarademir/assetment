@@ -1,0 +1,364 @@
+# Sorular ve analitik rubrik.
+# NOT: Bu dosyadaki sorular, rubrik ve çapa yanıtlar SENTETİKTİR (etik kurul onayı öncesi
+# geliştirme amaçlı). Gerçek sınav için soru metinleri, ölçütler ve çapalar burada güncellenir.
+#
+# Kurallar:
+#  - Her ölçütün puan aralığı min/max ile verilir (varsayılan 0–4).
+#  - Her puan düzeyi için bir tanımlayıcı (descriptor) zorunludur.
+#  - Çapa (anchor) yanıtlar ALTIN SETTEN GELEMEZ. Gerçek yanıtlardan seçilen çapalar için
+#    source_response_id doldurulur; sample-gold bu yanıtları havuzdan dışlar ve
+#    check-leakage hem kimlik hem metin özeti (SHA-256) üzerinden denetler.
+
+defaults:
+  score_min: 0
+  score_max: 4
+
+items:
+  - item_id: S1
+    bloom: alt          # alt = hatırlama/anlama/uygulama; üst = analiz/değerlendirme/yaratma
+    bloom_level: anlama
+    question: >-
+      Denetimli öğrenme ile denetimsiz öğrenme arasındaki temel farkı açıklayınız ve
+      her biri için gerçek hayattan birer örnek veriniz.
+    reference_answer: >-
+      Denetimli öğrenmede model, girdilerle birlikte doğru çıktıların (etiketlerin) bulunduğu
+      verilerden öğrenir ve amaç yeni girdiler için etiketi tahmin etmektir; sınıflandırma ve
+      regresyon tipik görevlerdir. Denetimsiz öğrenmede etiket yoktur; model verideki yapıyı,
+      örüntüleri ya da grupları kendisi keşfeder; kümeleme ve boyut indirgeme tipik görevlerdir.
+      Örneğin e-postaların spam/spam değil olarak sınıflandırılması denetimli, bir e-ticaret
+      sitesindeki müşterilerin satın alma davranışlarına göre segmentlere ayrılması denetimsiz
+      öğrenmeye örnektir. Temel fark, eğitim verisinde hedef değişkenin bulunup bulunmamasıdır.
+    criteria:
+      - criterion_id: C1
+        name: Kavramsal doğruluk
+        description: İki öğrenme türünün tanımı ve aralarındaki temel farkın (etiketli/etiketsiz veri) doğruluğu.
+        levels:
+          0: Tanım yok ya da tamamen yanlış.
+          1: Yalnızca bir tür belirsiz biçimde tanımlanmış ya da kavramlar karıştırılmış.
+          2: Her iki tür kabaca tanımlanmış ancak etiket/hedef değişken farkı açık değil.
+          3: Her iki tür doğru tanımlanmış, temel fark (etiketli/etiketsiz veri) belirtilmiş.
+          4: Doğru ve eksiksiz tanımlar; temel fark ile tipik görevler (sınıflandırma, kümeleme vb.) ilişkilendirilmiş.
+      - criterion_id: C2
+        name: Örneklerin uygunluğu
+        description: Her tür için verilen gerçek hayat örneklerinin doğruluğu ve açıklanması.
+        levels:
+          0: Örnek yok ya da örnekler tamamen ilgisiz.
+          1: Tek bir örnek var ve türü yanlış eşleştirilmiş ya da çok belirsiz.
+          2: Bir tür için doğru örnek var, diğeri eksik ya da hatalı.
+          3: Her iki tür için doğru örnek verilmiş, ancak neden o türe ait olduğu açıklanmamış.
+          4: Her iki tür için doğru ve özgün örnekler, gerekçeleriyle birlikte verilmiş.
+      - criterion_id: C3
+        name: Açıklık ve düzen
+        description: Yanıtın düzenli, anlaşılır ve terimleri tutarlı kullanan bir biçimde yazılması.
+        levels:
+          0: Anlaşılmaz ya da soruyla ilgisiz.
+          1: Dağınık; fikirler arasında bağ kurulmamış.
+          2: Kısmen düzenli; bazı belirsizlikler ve terim tutarsızlıkları var.
+          3: Düzenli ve anlaşılır; küçük aksaklıklar var.
+          4: Çok düzenli, akıcı; karşılaştırma açık bir yapıda sunulmuş.
+    anchors:
+      - anchor_id: S1-A0
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 0, C2: 0, C3: 0}
+        text: >-
+          Yapay zeka günümüzde çok önemli bir konudur ve her yerde kullanılmaktadır. Bence
+          gelecekte daha da önemli olacak.
+      - anchor_id: S1-A1
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 1, C2: 1, C3: 1}
+        text: >-
+          Denetimli öğrenme bir öğretmenin bilgisayarı denetlemesidir. Denetimsiz öğrenmede kimse
+          kontrol etmez. Örneğin robotlar denetimsiz öğrenir.
+      - anchor_id: S1-A2
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 2, C2: 2, C3: 2}
+        text: >-
+          Denetimli öğrenmede modele doğru cevaplar gösterilir, denetimsizde ise model kendi kendine
+          öğrenir. Mesela spam filtreleri denetimli öğrenmeye örnektir. Denetimsiz öğrenme de
+          verilerle ilgili bir şeyler bulmaya çalışır.
+      - anchor_id: S1-A3
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 3, C2: 3, C3: 3}
+        text: >-
+          Denetimli öğrenmede eğitim verisi etiketlidir; model girdiden doğru çıktıyı tahmin etmeyi
+          öğrenir. Denetimsiz öğrenmede veriler etiketsizdir ve model verideki grupları kendisi bulur.
+          Örneğin hastalık teşhisi için etiketli hasta kayıtlarıyla model eğitmek denetimli, müşterileri
+          alışveriş alışkanlıklarına göre gruplamak denetimsiz öğrenmedir.
+      - anchor_id: S1-A4
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 4, C2: 4, C3: 4}
+        text: >-
+          İki yaklaşım arasındaki temel fark, eğitim verisinde hedef değişkenin (etiketin) bulunup
+          bulunmamasıdır. Denetimli öğrenmede her örnek doğru çıktıyla eşleştirilmiştir; model bu
+          eşleşmeden genelleme yaparak yeni örneklerin etiketini tahmin eder (sınıflandırma, regresyon).
+          Denetimsiz öğrenmede etiket yoktur; model benzerliklere dayanarak yapı keşfeder (kümeleme,
+          boyut indirgeme). Örneğin konut fiyatlarını geçmiş satış fiyatlarından tahmin etmek
+          denetimlidir, çünkü hedef değer bilinmektedir; bir haber arşivini konularına göre otomatik
+          gruplamak ise denetimsizdir, çünkü önceden tanımlı konu etiketleri yoktur.
+
+  - item_id: S2
+    bloom: alt
+    bloom_level: uygulama
+    question: >-
+      Makine öğrenmesinde aşırı öğrenme (overfitting) nedir? Bir modelde aşırı öğrenmenin nasıl
+      fark edileceğini ve önlemek için kullanılabilecek yöntemleri açıklayınız.
+    reference_answer: >-
+      Aşırı öğrenme, modelin eğitim verisindeki gürültüyü ve rastlantısal ayrıntıları ezberleyerek
+      eğitim verisinde çok iyi, yeni (görülmemiş) verilerde ise kötü performans göstermesidir; model
+      genelleme yapamaz. Eğitim hatası düşerken doğrulama/test hatasının yükselmesi ya da ikisi arasında
+      büyük fark olması aşırı öğrenmenin işaretidir; öğrenme eğrileri ve çapraz doğrulama ile fark edilir.
+      Önlemek için daha fazla veri toplanabilir, veri artırma yapılabilir, model karmaşıklığı
+      azaltılabilir, düzenlileştirme (L1/L2), dropout, erken durdurma ve çapraz doğrulama kullanılabilir.
+    criteria:
+      - criterion_id: C1
+        name: Tanım
+        description: Aşırı öğrenmenin doğru tanımı (ezberleme, genelleme başarısızlığı).
+        levels:
+          0: Tanım yok ya da yanlış (ör. az öğrenme ile karıştırılmış).
+          1: Çok belirsiz bir tanım ("model çok öğrenir" gibi).
+          2: Eğitim verisini ezberleme fikri var ama yeni veride başarısızlık bağlantısı eksik.
+          3: Eğitim verisinde iyi, yeni veride kötü performans olarak doğru tanımlanmış.
+          4: Doğru tanım; gürültünün öğrenilmesi ve genelleme kavramıyla ilişkilendirilmiş.
+      - criterion_id: C2
+        name: Fark etme yöntemleri
+        description: Aşırı öğrenmenin nasıl tespit edileceğinin açıklanması.
+        levels:
+          0: Tespit yöntemi yok.
+          1: Yanlış ya da ilgisiz bir yöntem.
+          2: Test verisine bakmak gibi genel bir ifade var, ayrıntı yok.
+          3: Eğitim ve doğrulama hatasının karşılaştırılması doğru açıklanmış.
+          4: Hata farkı, öğrenme eğrileri ve/veya çapraz doğrulama birlikte, doğru açıklanmış.
+      - criterion_id: C3
+        name: Önleme yöntemleri
+        description: Aşırı öğrenmeyi önleme yöntemlerinin doğruluğu ve çeşitliliği.
+        levels:
+          0: Önleme yöntemi yok.
+          1: Yanlış yöntem (ör. modeli büyütmek) ya da tek belirsiz öneri.
+          2: Bir doğru yöntem, açıklamasız.
+          3: En az iki doğru yöntem, kısa açıklamayla.
+          4: Üç ya da daha fazla doğru yöntem, nasıl işe yaradıkları açıklanarak.
+    anchors:
+      - anchor_id: S2-A0
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 0, C2: 0, C3: 0}
+        text: >-
+          Aşırı öğrenme öğrencilerin sınavdan önce çok fazla çalışmasıdır, bu sağlığa zararlıdır.
+      - anchor_id: S2-A1
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 1, C2: 1, C3: 1}
+        text: >-
+          Overfitting modelin çok fazla öğrenmesi demektir. Bunu bilgisayarın yavaşlamasından
+          anlarız. Önlemek için daha büyük bir model kullanılmalıdır.
+      - anchor_id: S2-A2
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 2, C2: 2, C3: 2}
+        text: >-
+          Aşırı öğrenmede model eğitim verisini ezberler. Bunu test verisine bakarak anlayabiliriz.
+          Önlemek için daha fazla veri kullanılabilir.
+      - anchor_id: S2-A3
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 3, C2: 3, C3: 3}
+        text: >-
+          Aşırı öğrenme, modelin eğitim verisinde çok başarılı olup yeni verilerde başarısız olmasıdır.
+          Eğitim hatası düşükken doğrulama hatası yüksekse aşırı öğrenme vardır. Önlemek için
+          düzenlileştirme kullanılabilir ve model daha basit hale getirilebilir.
+      - anchor_id: S2-A4
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 4, C2: 4, C3: 4}
+        text: >-
+          Aşırı öğrenme, modelin eğitim verisindeki gerçek örüntülerle birlikte gürültüyü de
+          öğrenmesi ve bu yüzden görülmemiş veriye genelleme yapamamasıdır. Eğitim hatası azalmaya
+          devam ederken doğrulama hatasının artmaya başlaması öğrenme eğrilerinde açıkça görülür;
+          k-katlı çapraz doğrulamada katlar arası düşük performans da bir işarettir. Önlemek için
+          erken durdurma ile doğrulama hatası yükselmeye başladığında eğitim kesilir, L2
+          düzenlileştirme büyük ağırlıkları cezalandırarak modeli sadeleştirir, dropout nöronların
+          birbirine aşırı bağımlı olmasını engeller ve veri artırma eğitim örneklerini çeşitlendirir.
+
+  - item_id: S3
+    bloom: üst
+    bloom_level: değerlendirme
+    question: >-
+      Bir hastanenin acil servisinde hastaların öncelik sırasını belirlemek için yapay zekâ tabanlı
+      bir sistem kullanılması önerilmektedir. Bu uygulamanın olası yararlarını ve etik risklerini
+      değerlendiriniz; gerekçeli bir öneri sununuz.
+    reference_answer: >-
+      Yararlar: sistem çok sayıda hastayı hızlı ve tutarlı biçimde değerlendirerek bekleme süresini
+      azaltabilir, yorgunluğa bağlı insan hatalarını azaltabilir ve kritik hastaları erken
+      belirleyebilir. Riskler: eğitim verisindeki tarihsel yanlılıklar belirli grupların (yaş,
+      cinsiyet, sosyoekonomik durum) sistematik olarak geri plana atılmasına yol açabilir; kara kutu
+      modeller kararların açıklanmasını zorlaştırır; hatalı bir kararda sorumluluğun kime ait olduğu
+      belirsizdir; hasta verilerinin gizliliği korunmalıdır. Öneri: sistem karar verici değil karar
+      destek aracı olarak, insan denetiminde kullanılmalı; yanlılık denetimleri düzenli yapılmalı,
+      açıklanabilir modeller tercih edilmeli, pilot uygulama ile performans izlenmelidir.
+    criteria:
+      - criterion_id: C1
+        name: Yararların analizi
+        description: Uygulamanın yararlarının bağlama uygun ve gerekçeli biçimde ortaya konması.
+        levels:
+          0: Yarar belirtilmemiş.
+          1: Yalnızca genel bir ifade ("işleri kolaylaştırır").
+          2: Bir ya da iki yarar sıralanmış, gerekçesiz.
+          3: Bağlama uygun birden çok yarar, kısa gerekçelerle.
+          4: Bağlama uygun yararlar, mekanizmasıyla (hız, tutarlılık, erken uyarı vb.) derinlemesine açıklanmış.
+      - criterion_id: C2
+        name: Etik risklerin değerlendirilmesi
+        description: Yanlılık, şeffaflık, sorumluluk, gizlilik gibi risklerin doğru tanımlanması ve tartışılması.
+        levels:
+          0: Risk belirtilmemiş.
+          1: Belirsiz ya da teknik olmayan tek bir endişe ("robotlar hata yapabilir").
+          2: Bir etik risk adlandırılmış, tartışılmamış.
+          3: En az iki etik risk doğru adlandırılmış ve kısaca açıklanmış.
+          4: Birden çok etik risk, hastane bağlamındaki sonuçlarıyla birlikte derinlemesine tartışılmış.
+      - criterion_id: C3
+        name: Gerekçeli öneri
+        description: Yarar ve risklerin tartılmasına dayanan, uygulanabilir ve tutarlı bir öneri.
+        levels:
+          0: Öneri yok.
+          1: Gerekçesiz kesin bir yargı ("kesinlikle kullanılmalı/kullanılmamalı").
+          2: Öneri var ancak yarar ve risklerle bağlantısı zayıf.
+          3: Yarar ve risklere dayanan tutarlı bir öneri.
+          4: Koşulları ve önlemleri (insan denetimi, denetim, pilot uygulama) belirten, iyi gerekçelendirilmiş öneri.
+    anchors:
+      - anchor_id: S3-A0
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 0, C2: 0, C3: 0}
+        text: >-
+          Hastaneler çok kalabalık ve doktorlar çok yoruluyor. Devlet daha fazla doktor atamalıdır.
+      - anchor_id: S3-A1
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 1, C2: 1, C3: 1}
+        text: >-
+          Yapay zeka işleri kolaylaştırır. Ama robotlar da hata yapabilir. Bence kesinlikle
+          kullanılmalı çünkü teknoloji gelişiyor.
+      - anchor_id: S3-A2
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 2, C2: 2, C3: 2}
+        text: >-
+          Bu sistem hastaları daha hızlı sıraya koyabilir ve doktorların işini azaltır. Ancak sistem
+          yanlı olabilir. Bu yüzden dikkatli kullanılmalıdır.
+      - anchor_id: S3-A3
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 3, C2: 3, C3: 3}
+        text: >-
+          Sistem çok sayıda hastayı hızlıca değerlendirerek bekleme süresini kısaltabilir ve yorgun
+          personelin hatalarını azaltabilir. Öte yandan eğitim verisindeki yanlılık bazı hasta
+          gruplarının geri plana atılmasına neden olabilir; ayrıca modelin kararlarını açıklamak zordur.
+          Bu nedenle sistem son kararı doktora bırakan bir destek aracı olarak kullanılmalıdır.
+      - anchor_id: S3-A4
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 4, C2: 4, C3: 4}
+        text: >-
+          Yapay zekâ tabanlı önceliklendirme, gelen her hastayı aynı ölçütlerle saniyeler içinde
+          değerlendirdiği için hem tutarlılık sağlar hem de yoğun saatlerde kritik vakaları erken
+          yakalayarak hayat kurtarabilir. Ancak model geçmiş kayıtlarla eğitildiğinde, örneğin yaşlı ya
+          da sigortasız hastaların tarihsel olarak daha geç muayene edilmesi gibi yanlılıkları
+          yeniden üretebilir. Kara kutu bir model yanlış bir önceliklendirmenin nedenini açıklayamaz;
+          bu da hata durumunda sorumluluğun hastane mi, yazılım şirketi mi, hekim mi olduğu sorusunu
+          doğurur. Hasta verilerinin gizliliği de KVKK kapsamında korunmalıdır. Önerim, sistemin
+          yalnızca karar destek aracı olarak, hekimin onayıyla kullanılması; önce sınırlı bir pilot
+          uygulamada farklı hasta gruplarındaki hata oranlarının izlenmesi ve düzenli yanlılık
+          denetimleri yapılmasıdır.
+
+  - item_id: S4
+    bloom: üst
+    bloom_level: yaratma
+    question: >-
+      Bir üniversite kütüphanesi için öğrencilere kitap öneren bir yapay zekâ sistemi tasarlamanız
+      istenmektedir. Hangi verileri, hangi yöntemi kullanacağınızı ve sistemin başarısını nasıl
+      ölçeceğinizi gerekçeleriyle açıklayınız.
+    reference_answer: >-
+      Veri: ödünç alma geçmişi, öğrencinin bölümü ve aldığı dersler, kitapların konu/anahtar kelime
+      bilgileri ve öğrenci puanlamaları; kişisel veriler anonimleştirilmeli ve izin alınmalıdır.
+      Yöntem: benzer öğrencilerin ödünç aldığı kitapları öneren işbirlikçi filtreleme ile kitap
+      içeriğine dayalı içerik tabanlı filtrelemeyi birleştiren hibrit bir sistem; yeni öğrenci ve yeni
+      kitap için soğuk başlangıç sorunu içerik tabanlı yöntemle çözülür. Değerlendirme: geçmiş veride
+      precision@k, recall@k gibi çevrimdışı ölçütler; canlı ortamda A/B testi ile önerilerin ödünç
+      alınma oranı ve kullanıcı memnuniyeti ölçülür; öneri çeşitliliği de izlenir.
+    criteria:
+      - criterion_id: C1
+        name: Veri seçimi
+        description: Kullanılacak verilerin uygunluğu, gerekçesi ve veri gizliliğinin dikkate alınması.
+        levels:
+          0: Veri belirtilmemiş.
+          1: Uygunsuz ya da çok belirsiz veri ("internetten veri").
+          2: Bir uygun veri kaynağı, gerekçesiz.
+          3: Birden çok uygun veri kaynağı, gerekçeleriyle.
+          4: Uygun ve gerekçeli veri kaynakları; gizlilik/izin konusu da ele alınmış.
+      - criterion_id: C2
+        name: Yöntem
+        description: Öneri yönteminin uygunluğu ve gerekçelendirilmesi.
+        levels:
+          0: Yöntem yok.
+          1: Yanlış ya da ilgisiz yöntem.
+          2: Uygun bir yöntem adlandırılmış, nasıl çalıştığı açıklanmamış.
+          3: Uygun yöntem, işleyişi ve seçim gerekçesiyle açıklanmış.
+          4: Uygun (ör. hibrit) yöntem; işleyiş, gerekçe ve sınırlılıklar (soğuk başlangıç vb.) ele alınmış.
+      - criterion_id: C3
+        name: Başarının ölçülmesi
+        description: Sistemin başarısını değerlendirme ölçütlerinin uygunluğu.
+        levels:
+          0: Değerlendirme yok.
+          1: Ölçülemez ya da ilgisiz ölçüt ("öğrenciler beğenirse").
+          2: Tek uygun ölçüt, ayrıntısız.
+          3: Uygun çevrimdışı ya da çevrimiçi ölçütler açıklanmış.
+          4: Hem çevrimdışı (precision@k vb.) hem çevrimiçi (A/B testi vb.) ölçütler gerekçeleriyle.
+    anchors:
+      - anchor_id: S4-A0
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 0, C2: 0, C3: 0}
+        text: >-
+          Kütüphaneler çok önemlidir, öğrenciler daha çok kitap okumalıdır. Ben en çok roman okumayı
+          severim.
+      - anchor_id: S4-A1
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 1, C2: 1, C3: 1}
+        text: >-
+          İnternetten veri toplarım ve yapay zeka bu verilerle kitap önerir. Öğrenciler beğenirse
+          sistem başarılı olmuş demektir.
+      - anchor_id: S4-A2
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 2, C2: 2, C3: 2}
+        text: >-
+          Öğrencilerin daha önce aldığı kitapları kullanırım. Yöntem olarak öneri sistemi ya da
+          işbirlikçi filtreleme kullanılabilir. Başarıyı önerilen kitapların alınıp alınmadığına
+          bakarak ölçerim.
+      - anchor_id: S4-A3
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 3, C2: 3, C3: 3}
+        text: >-
+          Öğrencilerin ödünç alma geçmişi ve bölüm bilgisi kullanılabilir, çünkü ilgi alanlarını
+          yansıtır. İşbirlikçi filtreleme ile benzer öğrencilerin okuduğu kitaplar önerilir; bu yöntem
+          kitap içeriğini bilmeden çalışır. Başarı, geçmiş veride önerilerin ne kadarının gerçekten
+          ödünç alındığına bakılarak precision@10 ile ölçülebilir.
+      - anchor_id: S4-A4
+        source: sentetik-çapa-havuzu
+        source_response_id: null
+        scores: {C1: 4, C2: 4, C3: 4}
+        text: >-
+          Ödünç alma geçmişi, öğrencinin bölümü ve kayıtlı olduğu dersler ile kitapların konu ve özet
+          bilgileri temel veriler olur; öğrenci verileri anonimleştirilir ve açık rıza alınır. Yöntem
+          olarak işbirlikçi filtreleme ile içerik tabanlı filtrelemeyi birleştiren hibrit bir model
+          kurarım: işbirlikçi kısım benzer öğrencilerin tercihlerinden yararlanır, içerik tabanlı kısım
+          ise hiç ödünç alınmamış yeni kitaplar ve yeni öğrenciler için soğuk başlangıç sorununu
+          çözer. Başarıyı önce geçmiş veride precision@k ve recall@k ile, ardından iki öğrenci
+          grubuyla yapılan A/B testinde önerilerin ödünç alınma oranı ve memnuniyet anketiyle
+          ölçerim; öneri çeşitliliğini de izleyerek hep aynı kitapların önerilmesini engellerim.

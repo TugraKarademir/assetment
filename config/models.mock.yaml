@@ -1,0 +1,53 @@
+# SAHTE (mock) panel: API anahtarı olmadan uçtan uca boru hattı denemesi içindir.
+# Mock sağlayıcı, çapalara metin benzerliği + modele özgü yanlılık/gürültü ile puan üretir.
+# Bu modellerle elde edilen sonuçlar HİÇBİR bilimsel iddia için kullanılamaz.
+scorers: [mock_a, mock_b, mock_c]
+aggregator: mock_agg
+
+models:
+  mock_a:
+    provider: mock
+    model: mock-scorer-a-2026-01-01
+    family: Mock A
+    open_weights: true
+    params: {temperature: 0, max_tokens: 2000, bias: 0.3, noise: 0.45, invalid_json_rate: 0.03}
+    batch: false
+    max_concurrency: 16
+    price_input_per_mtok: 1.0
+    price_output_per_mtok: 4.0
+  mock_b:
+    provider: mock
+    model: mock-scorer-b-2026-01-01
+    family: Mock B
+    open_weights: false
+    params: {temperature: 0, max_tokens: 2000, bias: -0.25, noise: 0.55, invalid_json_rate: 0.03}
+    batch: false
+    max_concurrency: 16
+    price_input_per_mtok: 3.0
+    price_output_per_mtok: 15.0
+  mock_c:
+    provider: mock
+    model: mock-scorer-c-2026-01-01
+    family: Mock C
+    open_weights: false
+    params: {temperature: 0, max_tokens: 2000, bias: 0.0, noise: 0.8, invalid_json_rate: 0.03}
+    batch: false
+    max_concurrency: 16
+    price_input_per_mtok: 0.5
+    price_output_per_mtok: 1.5
+  mock_agg:
+    provider: mock
+    model: mock-aggregator-2026-01-01
+    family: Mock Agg
+    open_weights: false
+    params: {temperature: 0, max_tokens: 2000, bias: 0.0, noise: 0.2, invalid_json_rate: 0.0}
+    batch: false
+    max_concurrency: 16
+    price_input_per_mtok: 1.25
+    price_output_per_mtok: 10.0
+
+retry:
+  max_validation_retries: 2
+  max_api_retries: 3
+  backoff_initial_seconds: 0.01
+  backoff_max_seconds: 0.05

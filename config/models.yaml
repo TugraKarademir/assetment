@@ -1,0 +1,62 @@
+# Model rolleri ve sağlayıcı ayarları.
+# - `model` alanına sağlayıcının TAM (mümkünse tarihli) sürüm kimliğini yazın. Sağlayıcının
+#   yanıtta döndürdüğü gerçek sürüm adı da her çağrıda ayrıca kaydedilir (`model_version_returned`).
+# - Fiyatlar (USD / 1M token) yalnızca maliyet TAHMİNİ içindir; çalıştırma öncesi güncelleyin.
+# - Anthropic'in güncel API sürümü temperature/top_p/top_k kabul etmez; bu sağlayıcıda sıcaklık
+#   gönderilmez ve kayıtta "unsupported" olarak işaretlenir (README > Sınırlılıklar).
+# - Panelde en az bir yerel, açık ağırlıklı model bulunmalıdır (`open_weights: true`).
+
+scorers:            # Katman 1 ve 2'yi yürüten bağımsız puanlayıcılar (farklı aileler)
+  - gpt
+  - claude
+  - qwen_local
+aggregator: gemini  # Katman 3(a) birleştirici LLM
+
+models:
+  gpt:
+    provider: openai
+    model: gpt-4.1-2025-04-14
+    family: OpenAI GPT
+    open_weights: false
+    params: {temperature: 0, max_tokens: 2000, seed: 20261112}
+    batch: true                 # OpenAI Batch API
+    max_concurrency: 8
+    price_input_per_mtok: 2.00
+    price_output_per_mtok: 8.00
+  claude:
+    provider: anthropic
+    model: claude-opus-5-5
+    family: Anthropic Claude
+    open_weights: false
+    params: {max_tokens: 4000, effort: low}   # temperature desteklenmiyor
+    batch: true                 # Message Batches API
+    max_concurrency: 8
+    price_input_per_mtok: 4.00
+    price_output_per_mtok: 20.00
+  qwen_local:
+    provider: openai_compat     # Ollama / vLLM (OpenAI uyumlu uç nokta)
+    model: qwen2.5:32b-instruct-q4_K_M
+    family: Alibaba Qwen (açık ağırlıklı)
+    open_weights: true
+    base_url_env: LOCAL_BASE_URL   # ör. http://localhost:11434/v1
+    params: {temperature: 0, max_tokens: 2000, seed: 20261112}
+    batch: false
+    max_concurrency: 2
+    price_input_per_mtok: 0.0
+    price_output_per_mtok: 0.0
+  gemini:
+    provider: google
+    model: gemini-2.5-pro
+    family: Google Gemini
+    open_weights: false
+    params: {temperature: 0, max_tokens: 4000, seed: 20261112}
+    batch: false
+    max_concurrency: 4
+    price_input_per_mtok: 1.25
+    price_output_per_mtok: 10.00
+
+retry:
+  max_validation_retries: 2     # geçersiz JSON / aralık dışı puan için yeniden deneme
+  max_api_retries: 6            # hız sınırı ve geçici hatalar için üstel geri çekilme
+  backoff_initial_seconds: 2
+  backoff_max_seconds: 120

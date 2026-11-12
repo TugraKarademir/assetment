@@ -1,0 +1,10 @@
+pii_type,rule,masked,n
+AD,liste:yaygın-adlar,True,1
+AD,liste:öğrenci-adları,True,9
+AD,liste:öğrenci-adları(belirsiz),False,3
+AD,liste:öğrenci-adları(belirsiz),True,5
+AD,sezgisel:tanıtım-kalıbı,True,1
+EPOSTA,regex:email,True,4
+NUMARA,liste:numara,True,3
+NUMARA,regex:6-12hane,True,2
+TELEFON,regex:telefon,True,2

@@ -1,0 +1,3 @@
+# Metin içinde mutlaka maskelenecek ek terimler (her satıra bir terim; # ile başlayan satırlar yorum).
+# Örn. öğretim elemanı adları, şube kodları, yurt adları.
+Yapay Zeka Şube 3B

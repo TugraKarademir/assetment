@@ -1,0 +1,23 @@
+# Aynı zamanda sık kullanılan sözcük olan adlar: bunlar öğrenci listesinde olsa bile yalnızca
+# büyük harfle başladığında maskelenir (küçük harfli kullanım raporda "olası" olarak işaretlenir).
+can
+deniz
+umut
+barış
+nur
+gül
+sevgi
+doğan
+kaya
+kara
+demir
+arslan
+aslan
+kurt
+koç
+yıldız
+çelik
+kılıç
+güneş
+ay
+şimşek
