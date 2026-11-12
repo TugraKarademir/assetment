@@ -52,6 +52,28 @@ def extract_json(text: str) -> dict:
         return json.loads(t[s:e + 1])
 
 
+def json_schema_for(item: Item, response_id: str, revision: bool = False) -> dict:
+    """Kısıtlı çözümleme (llama.cpp / vLLM / Ollama) için JSON şeması: ölçüt kimlikleri sabit sırada, puanlar o
+    ölçütün aralığında tamsayı. Model yapısal olarak geçersiz çıktı üretemez; pydantic doğrulaması yine çalışır."""
+    crit = [{"type": "object",
+             "properties": {"criterion_id": {"type": "string", "enum": [c.criterion_id]},
+                            "score": {"type": "integer", "minimum": c.score_min, "maximum": c.score_max},
+                            "rationale": {"type": "string"},
+                            "rubric_evidence": {"type": "string"}},
+             "required": ["criterion_id", "score", "rationale", "rubric_evidence"],
+             "additionalProperties": False} for c in item.criteria]
+    props = {"item_id": {"type": "string", "enum": [item.item_id]},
+             "response_id": {"type": "string", "enum": [response_id]},
+             "criteria": {"type": "array", "prefixItems": crit,
+                          "minItems": len(crit), "maxItems": len(crit)},
+             "total": {"type": "integer", "minimum": item.total_min, "maximum": item.total_max},
+             "confidence": {"type": "number", "minimum": 0, "maximum": 1}}
+    if revision:
+        props["changed"] = {"type": "boolean"}
+        props["revision_reason"] = {"type": "string"}
+    return {"type": "object", "properties": props, "required": list(props), "additionalProperties": False}
+
+
 def evidence_in_response(evidence: str, response_text: str) -> bool | None:
     """Kanıt alıntısı yanıtta birebir geçiyor mu? (büyük/küçük harf, noktalama ve Türkçe karakter farkı yok sayılır)
     Boş alıntı -> None. Kalite göstergesidir; puanı reddetmez."""

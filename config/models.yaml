@@ -26,7 +26,7 @@ models:
     served_by: "llama-server, 64 çekirdekli VM (Aşama A: çekirdeklerin %40'ı)"
     base_url_env: QWEN_URL          # http://127.0.0.1:8001/v1
     timeout_s: 3600
-    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
     max_concurrency: 3              # = llama-server --parallel
   gemma:
     provider: openai_compat
@@ -38,7 +38,7 @@ models:
     served_by: "llama-server, 64 çekirdekli VM (Aşama A: çekirdeklerin %35'i)"
     base_url_env: GEMMA_URL         # http://127.0.0.1:8002/v1
     timeout_s: 3600
-    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
     max_concurrency: 3
   llama:
     provider: openai_compat
@@ -50,7 +50,7 @@ models:
     served_by: "llama-server, 64 çekirdekli VM (Aşama A: çekirdeklerin %25'i)"
     base_url_env: LLAMA_URL         # http://127.0.0.1:8003/v1
     timeout_s: 3600
-    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
     max_concurrency: 2
   aya:
     provider: openai_compat
@@ -62,7 +62,7 @@ models:
     served_by: "llama-server, 64 çekirdekli VM (Aşama B: tüm çekirdekler)"
     base_url_env: AYA_URL           # http://127.0.0.1:8004/v1
     timeout_s: 3600
-    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
     max_concurrency: 4
 
 retry:

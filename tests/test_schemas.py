@@ -52,3 +52,34 @@ def test_evidence_verbatim_flag(bank):
     parsed, err = v(json.dumps(d, ensure_ascii=False))
     assert err is None
     assert [c["evidence_verbatim"] for c in parsed["criteria"]] == [False, True, None]
+
+
+def test_json_schema_for_constrained_decoding(bank):
+    from scoring.schemas import json_schema_for
+    it = bank["S1"]
+    sch = json_schema_for(it, "R1")
+    crit = sch["properties"]["criteria"]
+    assert crit["minItems"] == crit["maxItems"] == 3
+    assert [c["properties"]["criterion_id"]["enum"] for c in crit["prefixItems"]] == [["C1"], ["C2"], ["C3"]]
+    sc = crit["prefixItems"][0]["properties"]["score"]
+    assert sc == {"type": "integer", "minimum": 0, "maximum": 4}
+    assert sch["properties"]["response_id"]["enum"] == ["R1"]
+    assert "items" not in crit            # llama.cpp `items: false` desteklemez
+    rev = json_schema_for(it, "R1", revision=True)
+    assert {"changed", "revision_reason"} <= set(rev["required"])
+    # Şemaya uyan bir örnek pydantic doğrulamasından geçmeli
+    v = make_validator(it, "R1")
+    assert v(_out())[1] is None
+
+
+def test_provider_sends_schema_only_when_enabled(bank):
+    from scoring.config import ModelSpec
+    from scoring.providers import LLMRequest
+    from scoring.providers.openai_provider import OpenAIProvider
+    from scoring.schemas import json_schema_for
+    req = LLMRequest("x", "s", [{"role": "user", "content": "u"}], {"json_schema": json_schema_for(bank["S1"], "R1")})
+    p = OpenAIProvider.__new__(OpenAIProvider)
+    p.spec = ModelSpec(provider="openai_compat", model="m", params={"json_schema": True})
+    assert p._body(req)["response_format"]["type"] == "json_schema"
+    p.spec = ModelSpec(provider="openai_compat", model="m", params={})
+    assert p._body(req)["response_format"] == {"type": "json_object"}

@@ -36,7 +36,12 @@ class OpenAIProvider(Provider):
             first["content"] = f"{req.system}\n\n{first['content']}"
             messages = [first, *req.messages[1:]]
         body = {"model": self.spec.model, "messages": messages, "max_tokens": p.get("max_tokens", 2000)}
-        if p.get("json_mode", True):
+        if p.get("json_schema") and req.metadata.get("json_schema"):
+            # Kısıtlı çözümleme: sunucu çıktıyı şemaya uyan JSON ile sınırlar (llama.cpp, vLLM, Ollama ≥0.5)
+            body["response_format"] = {"type": "json_schema",
+                                       "json_schema": {"name": "puanlama", "schema": req.metadata["json_schema"],
+                                                       "strict": True}}
+        elif p.get("json_mode", True):
             body["response_format"] = {"type": "json_object"}
         if "temperature" in p:
             body["temperature"] = p["temperature"]

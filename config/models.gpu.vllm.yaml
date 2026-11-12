@@ -24,7 +24,7 @@ models:
     quantization: AWQ int4
     served_by: vLLM
     base_url_env: VLLM_QWEN_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000, json_schema: true}
     max_concurrency: 32
     price_input_per_mtok: 0.0
     price_output_per_mtok: 0.0
@@ -37,7 +37,7 @@ models:
     quantization: FP8 (vLLM --quantization fp8)
     served_by: vLLM
     base_url_env: VLLM_GEMMA_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000, json_schema: true}
     max_concurrency: 32
     price_input_per_mtok: 0.0
     price_output_per_mtok: 0.0
@@ -50,7 +50,7 @@ models:
     quantization: FP8 (vLLM --quantization fp8)
     served_by: vLLM
     base_url_env: VLLM_MISTRAL_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000, json_schema: true}
     max_concurrency: 32
     price_input_per_mtok: 0.0
     price_output_per_mtok: 0.0
@@ -63,7 +63,7 @@ models:
     quantization: FP8 (vLLM --quantization fp8)  # ya da topluluk AWQ sürümü
     served_by: vLLM
     base_url_env: VLLM_LLAMA_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000, json_schema: true}
     max_concurrency: 16
     price_input_per_mtok: 0.0
     price_output_per_mtok: 0.0

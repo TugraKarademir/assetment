@@ -19,6 +19,12 @@ arasında sunucuları kendisi açıp kapatır.
 Betikler fiziksel çekirdek sayısını `lscpu` ile bulur. Sanal makine bunu yanlış bildirirse elle verin:
 `PHYS_CORES=32`. Tek tek değerler de verilebilir: `QWEN_THREADS`, `GEMMA_THREADS`, `LLAMA_THREADS`, `AYA_THREADS`.
 
+**Kısıtlı JSON çıktısı:** Her istemle birlikte rubrikten üretilen bir JSON şeması gönderilir
+(`params.json_schema: true`). llama.cpp, çıktıyı bu şemaya uyacak biçimde sınırlar: ölçüt kimlikleri sabittir ve
+puanlar o ölçütün aralığında bir tamsayıdır. Küçük modellerde sık görülen bozuk JSON ve yeniden deneme sorunu bu
+sayede ortadan kalkar. Bu konteynerde en küçük modelle yapılan denemede geçersiz çıktı oranı 12'de 9'dan 12'de
+0'a indi. Şemanın özeti her çağrı kaydına (`json_schema_sha256`) yazılır.
+
 ## 2. Gereksinimler
 
 | Kaynak | Öneri |

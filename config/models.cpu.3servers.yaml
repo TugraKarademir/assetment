@@ -12,6 +12,7 @@
 # Model adları Ollama etiketleridir; llama-server kullanılıyorsa aynı adı `--alias` ile verin.
 # Tekrar üretilebilirlik: model_revision alanına GGUF dosyasının SHA-256 özetini (llama.cpp) ya da
 # `ollama show <model> --modelfile` özetini yazın; her çağrı kaydına `model_meta` olarak girer.
+# json_schema: true -> sunucu çıktıyı rubrikten üretilen JSON şemasıyla kısıtlar (geçersiz çıktı/yeniden deneme olmaz).
 # Dört model dört farklı aileden gelir (Alibaba, Google, Meta, Cohere).
 
 scorers: [qwen, gemma, llama]
@@ -28,7 +29,7 @@ models:
     served_by: "CPU (40 çekirdek)"
     base_url_env: QWEN_URL
     timeout_s: 1800
-    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
     max_concurrency: 4            # sunucudaki paralel yuva sayısıyla aynı olmalı (llama-server --parallel)
   gemma:
     provider: openai_compat
@@ -40,7 +41,7 @@ models:
     served_by: "CPU (28 çekirdek)"
     base_url_env: GEMMA_URL
     timeout_s: 1800
-    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
     max_concurrency: 3
   llama:
     provider: openai_compat
@@ -52,7 +53,7 @@ models:
     served_by: "CPU (20 çekirdek)"
     base_url_env: LLAMA_URL
     timeout_s: 1800
-    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
     max_concurrency: 2
   aya:
     provider: openai_compat
@@ -64,7 +65,7 @@ models:
     served_by: "CPU (40 çekirdek)"
     base_url_env: AYA_URL
     timeout_s: 1800
-    params: {temperature: 0, seed: 20261112, max_tokens: 1000}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
     max_concurrency: 4
 
 retry:

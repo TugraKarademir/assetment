@@ -195,7 +195,9 @@ class CallEngine:
             cost = (res.input_tokens * spec.price_input_per_mtok + res.output_tokens * spec.price_output_per_mtok) / 1e6
         meta = {k: None for k in ("condition", "layer", "variant", "item_id", "response_id", "replicate",
                                   "template_name", "template_sha256", "attempt")}
-        meta.update({k: v for k, v in req.metadata.items() if k != "mock"})
+        meta.update({k: v for k, v in req.metadata.items() if k not in ("mock", "json_schema")})
+        meta["json_schema_sha256"] = (sha256_text(stable_json(req.metadata["json_schema"]))
+                                      if req.metadata.get("json_schema") and spec.params.get("json_schema") else None)
         prompt = req.prompt_text()
         self.logger.write({
             "timestamp": datetime.now(timezone.utc).isoformat(),

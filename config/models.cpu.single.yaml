@@ -24,7 +24,7 @@ models:
     quantization: GGUF Q4_K_M
     served_by: Ollama (CPU)
     base_url_env: LOCAL_BASE_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 1200}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1200, json_schema: true}
     max_concurrency: 2
   gemma:
     provider: openai_compat
@@ -35,7 +35,7 @@ models:
     quantization: GGUF Q4_K_M
     served_by: Ollama (CPU)
     base_url_env: LOCAL_BASE_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 1200}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1200, json_schema: true}
     max_concurrency: 2
   llama:
     provider: openai_compat
@@ -46,7 +46,7 @@ models:
     quantization: GGUF Q4_K_M
     served_by: Ollama (CPU)
     base_url_env: LOCAL_BASE_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 1200}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1200, json_schema: true}
     max_concurrency: 2
   aya:
     provider: openai_compat
@@ -57,7 +57,7 @@ models:
     quantization: GGUF Q4_K_M
     served_by: Ollama (CPU)
     base_url_env: LOCAL_BASE_URL
-    params: {temperature: 0, seed: 20261112, max_tokens: 1200}
+    params: {temperature: 0, seed: 20261112, max_tokens: 1200, json_schema: true}
     max_concurrency: 2
 
 retry:

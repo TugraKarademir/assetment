@@ -12,7 +12,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from .config import Item, ItemBank, ModelsConfig
 from .engine import Job, Outcome
 from .providers import LLMRequest
-from .schemas import RevisionOutput, ScoreOutput, make_validator
+from .schemas import RevisionOutput, ScoreOutput, json_schema_for, make_validator
 from .utils import sha256_text
 
 TEMPLATES = {("layer1", "anchored"): "layer1_score.j2", ("layer1", "zeroshot"): "layer1_score_zeroshot.j2",
@@ -74,9 +74,9 @@ def build_layer1_jobs(responses: pd.DataFrame, bank: ItemBank, model_keys: list[
             mock = {"task": "layer1", "variant": variant, "item_id": item.item_id, "response_id": r.response_id,
                     "response_text": r.text, "criteria": _criteria_ranges(item),
                     "anchors": _anchor_dicts(item) if anchors else [], "reference": item.reference_answer}
-            jobs.append(Job(LLMRequest(mk, system, [{"role": "user", "content": user}],
-                                       _meta(1, variant, mk, item, r.response_id, replicate, condition, renderer,
-                                             tmpl, mock)),
+            meta = _meta(1, variant, mk, item, r.response_id, replicate, condition, renderer, tmpl, mock)
+            meta["json_schema"] = json_schema_for(item, r.response_id)
+            jobs.append(Job(LLMRequest(mk, system, [{"role": "user", "content": user}], meta),
                             make_validator(item, r.response_id, ScoreOutput, r.text)))
     return jobs
 
@@ -128,6 +128,7 @@ def build_layer2_jobs(responses: pd.DataFrame, bank: ItemBank, l1_rows: pd.DataF
                     "others": [{c["criterion_id"]: c["score"] for c in ev[k]} for k in avail if k != mk]}
             meta = _meta(2, variant, mk, item, r.response_id, replicate, condition, renderer, tmpl, mock)
             meta["label_order"] = {lbl: k for lbl, k in labels}
+            meta["json_schema"] = json_schema_for(item, r.response_id, revision=True)
             jobs.append(Job(LLMRequest(mk, system, [{"role": "user", "content": user}], meta),
                             make_validator(item, r.response_id, RevisionOutput, r.text)))
     return jobs, skipped
@@ -157,6 +158,7 @@ def build_layer3_jobs(responses: pd.DataFrame, bank: ItemBank, l2_rows: pd.DataF
                 "revised": [{c["criterion_id"]: c["score"] for c in ev[k]} for k in avail]}
         meta = _meta(3, variant, aggregator, item, r.response_id, replicate, condition, renderer, tmpl, mock)
         meta["label_order"] = {lbl: k for lbl, k in labels}
+        meta["json_schema"] = json_schema_for(item, r.response_id)
         jobs.append(Job(LLMRequest(aggregator, system, [{"role": "user", "content": user}], meta),
                         make_validator(item, r.response_id, ScoreOutput, r.text)))
     return jobs, skipped
