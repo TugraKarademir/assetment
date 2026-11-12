@@ -156,3 +156,41 @@ yükler, modeller arasında sürekli gidip gelmez.
 - Sıcaklık 0 açgözlü (greedy) çözümlemedir. Yine de toplu işleme ve kayan nokta farkları nedeniyle çıktılar
   çalıştırmadan çalıştırmaya birebir aynı olmayabilir. Bu nedenle kararlılık ayrıca ölçülür
   (`score --condition stability --replicate 2`, farklı bir günde).
+
+## 6. GPU'suz sunucu (yalnızca CPU)
+
+Örnek: Huawei RH2288H V3, 2× Xeon E5-2640 v4 (20 çekirdek / 40 iş parçacığı), 64 GB RAM, Windows.
+
+CPU'da metin üretim hızı, modelin bellekten okunma hızıyla sınırlıdır. Kaba beklentiler şöyledir; kesin değer
+için `--limit 2` ile ölçün ve kayıttaki `latency_s` değerine bakın.
+
+| Model boyutu (4-bit) | Üretim hızı | Çağrı başına (~2.000 girdi + ~400 çıktı token) | Ablasyon (~15.600 çağrı) |
+|---|---|---|---|
+| 7–8B | ~6–10 token/sn | ~0,5–1 dk | ~5–11 gün |
+| 12B | ~4–6 token/sn | ~1–2 dk | ~2–3 hafta |
+| 24–32B | ~1,5–3 token/sn | ~3–5 dk | aylar (uygun değil) |
+
+Öneriler:
+- Bu sunucuda **gömme koşulu** rahatça çalışır (CPU yeterli).
+- LLM katmanları için `config/models.local.cpu.yaml` (7–12B modeller, Ollama) ile boru hattını gerçek
+  modellerle sınayın ve küçük bir pilot yapın: `--limit 10 --sequential-models`.
+- Asıl çalışma için GPU erişimi önerilir:
+  - **TÜBİTAK ULAKBİM TRUBA**: akademisyenlere ücretsiz GPU (A100 vb.) hesaplama sağlar. Verinin üçüncü taraf bir
+    sunucuda işlenmesi etik kurul başvurusunda belirtilmelidir; veri yine Türkiye'de ve kurumsal altyapıda kalır.
+  - Üniversitenin HPC merkezi ya da başka bir fakültenin GPU'lu sunucusu.
+  - Bu sunucuya düşük profilli bir GPU takmak (ör. NVIDIA L4 24 GB ya da T4 16 GB; 2U kasaya uyumu ve güç
+    kablosu üreticiden doğrulanmalıdır).
+- 7–12B modeller Türkçe puanlamada 24–32B modellerden belirgin biçimde zayıf olabilir. Küçük modellerle yapılan
+  bir çalışma, bu durumu sınırlılık olarak raporlamalıdır.
+
+### Tek 24–40 GB GPU için doğrulanmış 4-bit sürümler (Hugging Face, 2026-11-12)
+
+| Rol | Depo | Commit | Ağırlık |
+|---|---|---|---|
+| Puanlayıcı | `Qwen/Qwen3-32B-AWQ` (resmî; düşünme kipi kapatılmalı) | `0499c3ac83fdef8810b907a23894ba91e95eddd8` | 19,3 GB |
+| Puanlayıcı | `gaunernst/gemma-3-27b-it-int4-awq` (topluluk) | `7cf8bdc81343c635390dd1e1bf590ab22dd6f366` | 18,5 GB |
+| Puanlayıcı | `jeffcookio/Mistral-Small-3.2-24B-Instruct-2506-awq-sym` (topluluk) | `49ec31ec0975e46a1aeef24186a45f11be3042b8` | 15,0 GB |
+| Birleştirici | `kevinbazira/aya-expanse-32b-gptq-4bit` (topluluk; CC-BY-NC) | `8bce2e1ca4d9edcdc37eda38aa88823d75580196` | 19,9 GB |
+
+40 GB'lık bir kartta bunlar **tek tek** sunulur (§3b, `--only-models`). Topluluk nicelemeleri resmî değildir;
+commit karmasıyla sabitleyin ve ilk çalıştırmada `check-models` ile doğrulayın.

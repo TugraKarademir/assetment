@@ -97,7 +97,8 @@ def _prepare(subset: str, models_path: Path, limit: Optional[int] = None):
         if not gold_ids:
             raise typer.BadParameter("Altın set yok: önce `scoring sample-gold` çalıştırın.")
         responses = responses[responses.response_id.isin(gold_ids)]
-    responses = responses[~responses.is_empty].sort_values("response_id")
+    # Aynı sorunun yanıtları art arda: rubrik + çapalardan oluşan ortak önek sunucuda önbellekten okunur (prefix caching)
+    responses = responses[~responses.is_empty].sort_values(["item_id", "response_id"])
     if limit:
         responses = responses.groupby("item_id").head(limit)
     return exp, bank, models, responses

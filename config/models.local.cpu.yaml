@@ -1,0 +1,66 @@
+# GPU'SUZ SUNUCU (yalnızca CPU) — Ollama for Windows/Linux. Örn. Huawei RH2288H V3, 2× Xeon E5-2640 v4, 64 GB RAM.
+# CPU'da üretim hızı bellek bant genişliğiyle sınırlıdır: 7–12B modeller (4-bit) kullanılabilir; 24B+ modeller
+# çağrı başına dakikalar sürer ve 30.000+ çağrılık bir çalışma için uygun değildir.
+# Bu panel, BORU HATTINI GERÇEK MODELLERLE SINAMAK ve küçük ölçekli pilot içindir. Asıl çalışma için GPU önerilir
+# (docs/yerel_gpu_kurulumu.md > "GPU'suz sunucu").
+#
+# Sunucuda (PowerShell):  setx OLLAMA_CONTEXT_LENGTH 8192 ; setx OLLAMA_NUM_PARALLEL 2 ; ollama serve
+#   ollama pull qwen2.5:7b-instruct-q4_K_M ; ollama pull gemma3:12b ; ollama pull llama3.1:8b-instruct-q4_K_M
+#   ollama pull aya-expanse:8b
+# Bu depoda:  LOCAL_BASE_URL=http://<sunucu>:11434/v1   ve puanlamayı --sequential-models ile çalıştırın.
+# Etiketleri `ollama list` ile doğrulayın; model_revision alanına `ollama show <model> --modelfile` özetini yazın.
+
+scorers: [qwen, gemma, llama]
+aggregator: aya
+
+models:
+  qwen:
+    provider: openai_compat
+    model: qwen2.5:7b-instruct-q4_K_M
+    family: Alibaba Qwen
+    open_weights: true
+    model_revision: ""
+    quantization: GGUF Q4_K_M
+    served_by: Ollama (CPU)
+    base_url_env: LOCAL_BASE_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 1200}
+    max_concurrency: 2
+  gemma:
+    provider: openai_compat
+    model: gemma3:12b
+    family: Google Gemma
+    open_weights: true
+    model_revision: ""
+    quantization: GGUF Q4_K_M
+    served_by: Ollama (CPU)
+    base_url_env: LOCAL_BASE_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 1200}
+    max_concurrency: 2
+  llama:
+    provider: openai_compat
+    model: llama3.1:8b-instruct-q4_K_M
+    family: Meta Llama
+    open_weights: true
+    model_revision: ""
+    quantization: GGUF Q4_K_M
+    served_by: Ollama (CPU)
+    base_url_env: LOCAL_BASE_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 1200}
+    max_concurrency: 2
+  aya:
+    provider: openai_compat
+    model: aya-expanse:8b          # Cohere; Türkçe dahil 23 dil; lisans CC-BY-NC (araştırma için uygun)
+    family: Cohere Aya
+    open_weights: true
+    model_revision: ""
+    quantization: GGUF Q4_K_M
+    served_by: Ollama (CPU)
+    base_url_env: LOCAL_BASE_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 1200}
+    max_concurrency: 2
+
+retry:
+  max_validation_retries: 2
+  max_api_retries: 4
+  backoff_initial_seconds: 5
+  backoff_max_seconds: 60
