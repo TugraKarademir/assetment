@@ -17,6 +17,24 @@ physical_cores() {
   if [ "$n" -gt 0 ]; then echo "$n"; else nproc; fi
 }
 
+# llama.cpp seçenek adları sürümler arasında değişir: isteğe bağlı seçenekler yalnızca destekleniyorsa eklenir.
+_HELP=""
+supports() {
+  [ -z "$_HELP" ] && _HELP=$("$LLAMA_SERVER" --help 2>&1 || true)
+  grep -qE -- "(^|[ ,])$1([ ,]|$)" <<<"$_HELP"
+}
+
+optional_flags() {
+  local f=()
+  supports --cont-batching && f+=(--cont-batching)
+  supports --cache-reuse && f+=(--cache-reuse 256)
+  if [ "${MLOCK:-0}" = "1" ]; then           # bellek kilitleme: memlock yetkisi gerekir (ulimit -l unlimited)
+    if supports --mlock; then f+=(--mlock); elif supports --load-mode; then f+=(--load-mode mmap+mlock); fi
+  fi
+  local nf; nf=$(numa_flag); [ -n "$nf" ] && supports --numa && f+=($nf)
+  echo "${f[@]}"
+}
+
 numa_flag() {
   local nodes
   nodes=$(lscpu 2>/dev/null | awk -F: '/NUMA node\(s\)/ {gsub(/ /,"",$2); print $2}')
@@ -31,16 +49,24 @@ start_server() {
     echo "Model yok: $MODELS_DIR/$gguf (önce: bash scripts/download_cpu_models.sh $MODELS_DIR)"; exit 1
   fi
   echo "Başlatılıyor: $name  port=$port  iş parçacığı=$threads  paralel=$parallel  bağlam=$ctx"
+  command -v "$LLAMA_SERVER" >/dev/null || { echo "llama-server bulunamadı: $LLAMA_SERVER (LLAMA_SERVER=...)"; exit 1; }
   # shellcheck disable=SC2046
   nohup "$LLAMA_SERVER" -m "$MODELS_DIR/$gguf" --alias "$alias" --host 127.0.0.1 --port "$port" \
-    -t "$threads" -tb "$threads" --parallel "$parallel" -c "$ctx" --cont-batching --cache-reuse 256 \
-    --mlock $(numa_flag) --api-key "$API_KEY" > "$RUN_DIR/$name.log" 2>&1 &
+    -t "$threads" -tb "$threads" --parallel "$parallel" -c "$ctx" $(optional_flags) \
+    --api-key "$API_KEY" > "$RUN_DIR/$name.log" 2>&1 &
   echo $! > "$RUN_DIR/$name.pid"
 }
 
 wait_ready() {  # wait_ready <port> [zaman_aşımı_sn]
   local port=$1 limit=${2:-900} t=0
   until curl -sf -H "Authorization: Bearer $API_KEY" "http://127.0.0.1:$port/v1/models" >/dev/null; do
+    # Süreç çöktüyse beklemeden günlüğü göster
+    for pf in "$RUN_DIR"/*.pid; do
+      [ -f "$pf" ] || continue
+      if ! kill -0 "$(cat "$pf")" 2>/dev/null; then
+        echo "Sunucu süreci kapandı: $(basename "$pf" .pid). Günlük:"; tail -5 "${pf%.pid}.log"; exit 1
+      fi
+    done
     sleep 5; t=$((t + 5))
     if [ "$t" -ge "$limit" ]; then echo "Sunucu $port hazır olmadı; günlük: $RUN_DIR/"; exit 1; fi
   done
