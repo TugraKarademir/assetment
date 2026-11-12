@@ -52,8 +52,20 @@ def extract_json(text: str) -> dict:
         return json.loads(t[s:e + 1])
 
 
-def make_validator(item: Item, response_id: str, schema: type[ScoreOutput] = ScoreOutput):
-    """Rubriğe göre doğrulama: şema, kimlikler, ölçüt kümesi, puan aralığı. Toplam uyuşmazlığı not edilir."""
+def evidence_in_response(evidence: str, response_text: str) -> bool | None:
+    """Kanıt alıntısı yanıtta birebir geçiyor mu? (büyük/küçük harf, noktalama ve Türkçe karakter farkı yok sayılır)
+    Boş alıntı -> None. Kalite göstergesidir; puanı reddetmez."""
+    from .utils import normalize_for_hash
+    ev = normalize_for_hash(evidence or "")
+    if not ev:
+        return None
+    return ev in normalize_for_hash(response_text or "")
+
+
+def make_validator(item: Item, response_id: str, schema: type[ScoreOutput] = ScoreOutput,
+                   response_text: str | None = None):
+    """Rubriğe göre doğrulama: şema, kimlikler, ölçüt kümesi, puan aralığı. Toplam uyuşmazlığı not edilir.
+    response_text verilirse her ölçüt için kanıt alıntısının yanıtta birebir geçip geçmediği işaretlenir."""
 
     def validate(text: str) -> tuple[dict[str, Any] | None, str | None]:
         try:
@@ -70,6 +82,9 @@ def make_validator(item: Item, response_id: str, schema: type[ScoreOutput] = Sco
             if not crit.score_min <= c.score <= crit.score_max:
                 return None, f"{c.criterion_id} puanı aralık dışında: {c.score} ∉ [{crit.score_min}, {crit.score_max}]"
         out = obj.model_dump()
+        if response_text is not None:
+            for c in out["criteria"]:
+                c["evidence_verbatim"] = evidence_in_response(c.get("rubric_evidence", ""), response_text)
         s = sum(c.score for c in obj.criteria)
         out["total_reported"] = obj.total
         out["total_mismatch"] = obj.total is not None and abs(obj.total - s) > 1e-9

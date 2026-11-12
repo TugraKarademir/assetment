@@ -168,6 +168,10 @@ def evaluate(cond: pd.DataFrame, consensus: pd.DataFrame, responses: pd.DataFram
     if weights is not None and not weights.empty:
         tables["weights_by_fold"] = weights
 
+    # Gerekçe kalitesi: kanıt alıntısı yanıtta birebir geçiyor mu, boş mu, K2'de puan değişti mi
+    if raw is not None and "evidence_verbatim" in raw:
+        tables["rationale_quality"] = rationale_quality(raw)
+
     # Kararlılık
     if raw is not None:
         st = stability_table(raw, bank, manifests_dir)
@@ -179,6 +183,20 @@ def evaluate(cond: pd.DataFrame, consensus: pd.DataFrame, responses: pd.DataFram
         write_table(t, out_dir / name)
     bland_altman_plots(cond, human, ref_col, bank, out_dir / "figures")
     return tables
+
+
+# ----------------------------------------------------------------------------- gerekçe kalitesi
+def rationale_quality(raw: pd.DataFrame) -> pd.DataFrame:
+    r = raw[raw.score.notna() & (raw.replicate.astype(str) == "1")].copy()
+    ev = r.evidence_verbatim.map(lambda v: None if pd.isna(v) else str(v).lower() == "true")
+    r["ev_given"] = ev.notna()
+    r["ev_verbatim"] = ev == True  # noqa: E712
+    g = r.groupby(["layer", "variant", "model_key"])
+    out = g.agg(n=("score", "size"), kanıt_verilen=("ev_given", "mean"), kanıt_birebir=("ev_verbatim", "mean")).reset_index()
+    out["kanıt_birebir_verilenlerde"] = out.kanıt_birebir / out.kanıt_verilen.where(out.kanıt_verilen > 0)
+    ch = r[r.layer == 2].groupby(["variant", "model_key"]).changed.apply(
+        lambda s: s.map(lambda v: str(v).lower() == "true").mean()).rename("k2_değiştirme_oranı").reset_index()
+    return out.merge(ch.assign(layer=2), on=["layer", "variant", "model_key"], how="left")
 
 
 # ----------------------------------------------------------------------------- kararlılık

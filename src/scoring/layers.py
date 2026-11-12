@@ -19,7 +19,8 @@ TEMPLATES = {("layer1", "anchored"): "layer1_score.j2", ("layer1", "zeroshot"): 
              ("layer2", "anchored"): "layer2_revise.j2", ("layer2", "zeroshot"): "layer2_revise.j2",
              ("layer3", "anchored"): "layer3_aggregate.j2", ("layer3", "zeroshot"): "layer3_aggregate.j2"}
 ROW_COLUMNS = ["run_id", "replicate", "variant", "layer", "model_key", "item_id", "response_id", "criterion_id",
-               "score", "rationale", "rubric_evidence", "confidence", "changed", "total_mismatch", "call_id", "error"]
+               "score", "rationale", "rubric_evidence", "evidence_verbatim", "confidence", "changed", "total_mismatch",
+               "call_id", "error"]
 
 
 class PromptRenderer:
@@ -76,7 +77,7 @@ def build_layer1_jobs(responses: pd.DataFrame, bank: ItemBank, model_keys: list[
             jobs.append(Job(LLMRequest(mk, system, [{"role": "user", "content": user}],
                                        _meta(1, variant, mk, item, r.response_id, replicate, condition, renderer,
                                              tmpl, mock)),
-                            make_validator(item, r.response_id, ScoreOutput)))
+                            make_validator(item, r.response_id, ScoreOutput, r.text)))
     return jobs
 
 
@@ -128,7 +129,7 @@ def build_layer2_jobs(responses: pd.DataFrame, bank: ItemBank, l1_rows: pd.DataF
             meta = _meta(2, variant, mk, item, r.response_id, replicate, condition, renderer, tmpl, mock)
             meta["label_order"] = {lbl: k for lbl, k in labels}
             jobs.append(Job(LLMRequest(mk, system, [{"role": "user", "content": user}], meta),
-                            make_validator(item, r.response_id, RevisionOutput)))
+                            make_validator(item, r.response_id, RevisionOutput, r.text)))
     return jobs, skipped
 
 
@@ -157,7 +158,7 @@ def build_layer3_jobs(responses: pd.DataFrame, bank: ItemBank, l2_rows: pd.DataF
         meta = _meta(3, variant, aggregator, item, r.response_id, replicate, condition, renderer, tmpl, mock)
         meta["label_order"] = {lbl: k for lbl, k in labels}
         jobs.append(Job(LLMRequest(aggregator, system, [{"role": "user", "content": user}], meta),
-                        make_validator(item, r.response_id, ScoreOutput)))
+                        make_validator(item, r.response_id, ScoreOutput, r.text)))
     return jobs, skipped
 
 
@@ -174,7 +175,8 @@ def outcomes_to_rows(outcomes: list[Outcome], run_id: str) -> pd.DataFrame:
             continue
         for c in o.parsed["criteria"]:
             rows.append({**base, "criterion_id": c["criterion_id"], "score": c["score"], "rationale": c["rationale"],
-                         "rubric_evidence": c.get("rubric_evidence", ""), "confidence": o.parsed["confidence"],
+                         "rubric_evidence": c.get("rubric_evidence", ""),
+                         "evidence_verbatim": c.get("evidence_verbatim"), "confidence": o.parsed["confidence"],
                          "changed": o.parsed.get("changed"), "total_mismatch": o.parsed.get("total_mismatch"),
                          "call_id": o.call_id, "error": None})
     return pd.DataFrame(rows, columns=ROW_COLUMNS)

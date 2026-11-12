@@ -41,3 +41,14 @@ def test_revision_schema_requires_fields(bank):
     v = make_validator(bank["S1"], "R1", RevisionOutput)
     assert v(_out())[1]
     assert v(_out(changed=False, revision_reason="koruyorum"))[1] is None
+
+
+def test_evidence_verbatim_flag(bank):
+    v = make_validator(bank["S1"], "R1", response_text="Denetimli öğrenmede VERİLER etiketlidir; model tahmin yapar.")
+    d = json.loads(_out())
+    d["criteria"][0]["rubric_evidence"] = "verilerin etiketlidir"   # yanıtta yok
+    d["criteria"][1]["rubric_evidence"] = "veriler etiketlidir"     # var (harf/noktalama farkı yok sayılır)
+    d["criteria"][2]["rubric_evidence"] = ""
+    parsed, err = v(json.dumps(d, ensure_ascii=False))
+    assert err is None
+    assert [c["evidence_verbatim"] for c in parsed["criteria"]] == [False, True, None]
