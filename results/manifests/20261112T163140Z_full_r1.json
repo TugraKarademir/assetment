@@ -1,0 +1,169 @@
+{
+  "run_id": "20261112T163140Z_full_r1",
+  "created_at_utc": "2026-11-12T16:31:40.626959+00:00",
+  "git_commit": "e8a5404f5cd4ff1f137d0f692ed9284c022d4a18",
+  "git_dirty": true,
+  "git_dirty_files": [
+    "M src/scoring/cli.py",
+    "?? prompts/",
+    "?? results/manifests/",
+    "?? src/scoring/engine.py",
+    "?? src/scoring/layers.py",
+    "?? src/scoring/manifest.py",
+    "?? src/scoring/pipeline.py",
+    "?? src/scoring/providers/",
+    "?? src/scoring/schemas.py"
+  ],
+  "config_sha256": {
+    "config/items.yaml": "b8c250de2bab287f3adc204d646764d3c22544bb4c916c37cec22e4e2856229c",
+    "config/models.mock.yaml": "e0b128f7079a8162be52931a51148e0637b1dfde7a1beef944ab9f8c9b1aeda9",
+    "config/experiment.yaml": "8705d6528e4d9d8bf773ac523b06ff77b548b68f5f1c84b67657d16981382d12",
+    "config/moodle_columns.yaml": "71f36371c753c9aadb4d10a8214c9d5c69367d5171fc426ee5cc28f0885422d7",
+    "prompts/_common.j2": "9687a5ac37f78f9da877f709eeaaee6fd658a07455cdd51c5e8b39c0f77d6c2a",
+    "prompts/layer1_score.j2": "ad90df10d3b257d66537886f3cba91b21fb2aae3d50f852beb385f1af70a90be",
+    "prompts/layer1_score_zeroshot.j2": "4033f108905a4a7590eeb806a17448da924cd08b8f59c1c1e502706d0473666b",
+    "prompts/layer2_revise.j2": "30651e186e71357cdde87ac1342f4ad2080e4dcc09235450735499fed1b92042",
+    "prompts/layer3_aggregate.j2": "32d556d32e0969233019d5b3db98edd601f6c59018bdfc96e2adbf68484b35ea"
+  },
+  "seeds": {
+    "global": 20261112,
+    "gold_sampling": 4242,
+    "folds": 777,
+    "bootstrap": 2024,
+    "layer2_order": 99
+  },
+  "python": "3.13.18 (main, Oct 26 2026, 14:08:19) [Clang 23.1.3 ]",
+  "platform": "Linux-6.18.44-fc-v378-x86_64-with-glibc2.39",
+  "packages": {
+    "layered-scoring": "0.1.0",
+    "openai": "3.49.0",
+    "anthropic": "2.8.0",
+    "google-genai": "3.2.0",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "pydantic": "2.14.3",
+    "jinja2": "3.1.6",
+    "typer": "0.29.1",
+    "sentence-transformers": null,
+    "torch": null,
+    "spylls": "0.1.7",
+    "matplotlib": "3.11.2"
+  },
+  "argv": [
+    "/home/user/voice_recorder/.venv/bin/scoring",
+    "score",
+    "--condition",
+    "full",
+    "--models",
+    "config/models.mock.yaml",
+    "-y",
+    "--limit",
+    "3"
+  ],
+  "condition": "full",
+  "subset": "gold",
+  "replicate": 1,
+  "n_responses": 12,
+  "models": {
+    "scorers": [
+      "mock_a",
+      "mock_b",
+      "mock_c"
+    ],
+    "aggregator": "mock_agg",
+    "models": {
+      "mock_a": {
+        "key": "mock_a",
+        "provider": "mock",
+        "model": "mock-scorer-a-2026-01-01",
+        "family": "Mock A",
+        "open_weights": true,
+        "params": {
+          "temperature": 0,
+          "max_tokens": 2000,
+          "bias": 0.3,
+          "noise": 0.45,
+          "invalid_json_rate": 0.03
+        },
+        "batch": false,
+        "max_concurrency": 16,
+        "base_url_env": null,
+        "price_input_per_mtok": 1.0,
+        "price_output_per_mtok": 4.0
+      },
+      "mock_b": {
+        "key": "mock_b",
+        "provider": "mock",
+        "model": "mock-scorer-b-2026-01-01",
+        "family": "Mock B",
+        "open_weights": false,
+        "params": {
+          "temperature": 0,
+          "max_tokens": 2000,
+          "bias": -0.25,
+          "noise": 0.55,
+          "invalid_json_rate": 0.03
+        },
+        "batch": false,
+        "max_concurrency": 16,
+        "base_url_env": null,
+        "price_input_per_mtok": 3.0,
+        "price_output_per_mtok": 15.0
+      },
+      "mock_c": {
+        "key": "mock_c",
+        "provider": "mock",
+        "model": "mock-scorer-c-2026-01-01",
+        "family": "Mock C",
+        "open_weights": false,
+        "params": {
+          "temperature": 0,
+          "max_tokens": 2000,
+          "bias": 0.0,
+          "noise": 0.8,
+          "invalid_json_rate": 0.03
+        },
+        "batch": false,
+        "max_concurrency": 16,
+        "base_url_env": null,
+        "price_input_per_mtok": 0.5,
+        "price_output_per_mtok": 1.5
+      },
+      "mock_agg": {
+        "key": "mock_agg",
+        "provider": "mock",
+        "model": "mock-aggregator-2026-01-01",
+        "family": "Mock Agg",
+        "open_weights": false,
+        "params": {
+          "temperature": 0,
+          "max_tokens": 2000,
+          "bias": 0.0,
+          "noise": 0.2,
+          "invalid_json_rate": 0.0
+        },
+        "batch": false,
+        "max_concurrency": 16,
+        "base_url_env": null,
+        "price_input_per_mtok": 1.25,
+        "price_output_per_mtok": 10.0
+      }
+    },
+    "retry": {
+      "max_validation_retries": 2,
+      "max_api_retries": 3,
+      "backoff_initial_seconds": 0.01,
+      "backoff_max_seconds": 0.05
+    },
+    "source_path": "config/models.mock.yaml"
+  },
+  "plan": {
+    "layer1_anchored": true,
+    "layer1_zeroshot": false,
+    "layer2_anchored": true,
+    "layer2_zeroshot": false,
+    "layer3": true
+  }
+}

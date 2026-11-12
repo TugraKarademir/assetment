@@ -84,6 +84,75 @@ def check_leakage_cmd():
         raise typer.Exit(1)
 
 
+def _prepare(subset: str, models_path: Path, limit: Optional[int] = None):
+    """Ortak hazırlık: yapılandırma, yanıt alt kümesi ve (her zaman) sızıntı denetimi."""
+    from .data import load_responses
+    from .leakage import check_leakage
+    exp, bank, models = load_experiment(), load_items(), load_models(models_path)
+    responses = load_responses(exp.path("responses"))
+    gold_path = exp.path("gold_sample")
+    gold_ids = set(pd.read_csv(gold_path, dtype=str).response_id) if gold_path.exists() else set()
+    check_leakage(bank, responses, gold_ids)
+    if subset == "gold":
+        if not gold_ids:
+            raise typer.BadParameter("Altın set yok: önce `scoring sample-gold` çalıştırın.")
+        responses = responses[responses.response_id.isin(gold_ids)]
+    responses = responses[~responses.is_empty].sort_values("response_id")
+    if limit:
+        responses = responses.groupby("item_id").head(limit)
+    return exp, bank, models, responses
+
+
+def _confirm_cost(est: pd.DataFrame, yes: bool) -> None:
+    from .utils import df_to_markdown
+    typer.echo(df_to_markdown(est, ".2f"))
+    total = est.est_cost_usd.sum()
+    typer.echo(f"TAHMİNİ TOPLAM MALİYET: ${total:,.2f} (çağrı: {int(est.calls.sum())}, önbellekte: "
+               f"{int(est.cached.sum())}; Katman 2/3 tahmini kabadır)")
+    if not yes and not typer.confirm("Devam edilsin mi?", default=False):
+        raise typer.Exit(1)
+
+
+@app.command("estimate-cost")
+def estimate_cost_cmd(condition: str = typer.Option("ablation"), subset: str = typer.Option("gold"),
+                      models: Path = ModelsOpt, replicate: int = 1):
+    """Bir çalıştırmanın çağrı sayısını ve maliyetini, istemleri oluşturarak tahmin eder."""
+    from .pipeline import CONDITION_PLANS, estimate_cost
+    exp, bank, mcfg, responses = _prepare(subset, models)
+    est = estimate_cost(responses, bank, mcfg, exp, CONDITION_PLANS[condition], replicate)
+    _confirm_cost(est, yes=True)
+
+
+@app.command()
+def score(condition: str = typer.Option("full", help="full | panel_vote | single_anchored | ablation | stability ..."),
+          subset: str = typer.Option("gold", help="gold | all"),
+          models: Path = ModelsOpt,
+          replicate: int = typer.Option(1, help="Kararlılık için 2 (önbellek ayrı tutulur)"),
+          yes: bool = typer.Option(False, "--yes", "-y", help="Maliyet onayını atla"),
+          no_batch: bool = typer.Option(False, help="Toplu (batch) API kullanma"),
+          limit: Optional[int] = typer.Option(None, help="Soru başına en fazla N yanıt (deneme için)")):
+    """LLM katmanlarını çalıştırır ve ham puanları depoya ekler."""
+    from .manifest import new_run_id, write_manifest
+    from .pipeline import CONDITION_PLANS, estimate_cost, run_pipeline, store_raw_scores
+    if condition not in CONDITION_PLANS:
+        raise typer.BadParameter(f"Bilinmeyen koşul: {condition}. Seçenekler: {list(CONDITION_PLANS)}")
+    exp, bank, mcfg, responses = _prepare(subset, models, limit)
+    plan = CONDITION_PLANS[condition]
+    _confirm_cost(estimate_cost(responses, bank, mcfg, exp, plan, replicate), yes)
+    run_id = new_run_id(f"{condition}_r{replicate}")
+    write_manifest(run_id, exp.path("logs_dir"), exp.path("results_dir"),
+                   ["config/items.yaml", str(models), "config/experiment.yaml", "config/moodle_columns.yaml"],
+                   exp.seeds, {"condition": condition, "subset": subset, "replicate": replicate,
+                               "n_responses": len(responses), "models": mcfg.model_dump(mode="json"),
+                               "plan": plan.__dict__})
+    new, notes = asyncio.run(run_pipeline(responses, bank, mcfg, exp, plan, replicate, run_id, condition,
+                                          use_batch=not no_batch))
+    store_raw_scores(exp.path("raw_scores"), new)
+    typer.echo(f"Çalıştırma {run_id} tamamlandı. Kayıt: logs/{run_id}/calls.jsonl")
+    for k, v in notes.items():
+        typer.echo(f"  {k}: {v}")
+
+
 def main():
     app()
 
