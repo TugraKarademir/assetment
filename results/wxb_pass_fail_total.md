@@ -13,7 +13,7 @@
 | full | S1 | TOPLAM | 0.564 | 0.895 | 0.331 | 0.223 | False | False | False | KALDI |
 | full_median | S1 | TOPLAM | 0.584 | 0.895 | 0.311 | 0.360 | False | False | False | KALDI |
 | full_llm_aggregator | S1 | TOPLAM | 0.584 | 0.895 | 0.311 | 0.360 | False | False | False | KALDI |
-| embedding_tfidf_demo | S1 | TOPLAM | 0.847 | 0.895 | 0.049 | 0.096 | True | True | True | GEÇTİ |
+| embedding | S1 | TOPLAM | 0.815 | 0.895 | 0.080 | 0.096 | True | True | True | GEÇTİ |
 | single_zeroshot:mock_a | S2 | TOPLAM | 0.853 | 0.892 | 0.039 | -0.022 | True | True | True | GEÇTİ |
 | single_zeroshot:mock_b | S2 | TOPLAM | 0.802 | 0.892 | 0.090 | -0.440 | True | True | False | KALDI |
 | single_zeroshot:mock_c | S2 | TOPLAM | 0.775 | 0.892 | 0.117 | -0.478 | True | False | False | KALDI |
@@ -27,7 +27,7 @@
 | full | S2 | TOPLAM | 0.788 | 0.892 | 0.104 | 0.177 | True | False | False | KALDI |
 | full_median | S2 | TOPLAM | 0.797 | 0.892 | 0.094 | 0.215 | True | True | False | KALDI |
 | full_llm_aggregator | S2 | TOPLAM | 0.775 | 0.892 | 0.117 | 0.255 | True | False | False | KALDI |
-| embedding_tfidf_demo | S2 | TOPLAM | 0.854 | 0.892 | 0.038 | 0.051 | True | True | True | GEÇTİ |
+| embedding | S2 | TOPLAM | 0.849 | 0.892 | 0.042 | -0.025 | True | True | True | GEÇTİ |
 | single_zeroshot:mock_a | S3 | TOPLAM | 0.649 | 0.935 | 0.287 | -0.681 | False | False | False | KALDI |
 | single_zeroshot:mock_b | S3 | TOPLAM | 0.327 | 0.935 | 0.608 | -1.350 | False | False | False | KALDI |
 | single_zeroshot:mock_c | S3 | TOPLAM | 0.609 | 0.935 | 0.326 | -0.780 | False | False | False | KALDI |
@@ -41,7 +41,7 @@
 | full | S3 | TOPLAM | 0.747 | 0.935 | 0.188 | 0.366 | True | False | False | KALDI |
 | full_median | S3 | TOPLAM | 0.740 | 0.935 | 0.196 | 0.387 | True | False | False | KALDI |
 | full_llm_aggregator | S3 | TOPLAM | 0.740 | 0.935 | 0.196 | 0.387 | True | False | False | KALDI |
-| embedding_tfidf_demo | S3 | TOPLAM | 0.868 | 0.935 | 0.067 | 0.020 | True | True | True | GEÇTİ |
+| embedding | S3 | TOPLAM | 0.886 | 0.935 | 0.049 | 0.105 | True | True | True | GEÇTİ |
 | single_zeroshot:mock_a | S4 | TOPLAM | 0.835 | 0.924 | 0.089 | -0.148 | True | True | True | GEÇTİ |
 | single_zeroshot:mock_b | S4 | TOPLAM | 0.711 | 0.924 | 0.213 | -0.573 | True | False | False | KALDI |
 | single_zeroshot:mock_c | S4 | TOPLAM | 0.748 | 0.924 | 0.176 | -0.332 | True | False | False | KALDI |
@@ -55,7 +55,7 @@
 | full | S4 | TOPLAM | 0.509 | 0.924 | 0.415 | 0.637 | False | False | False | KALDI |
 | full_median | S4 | TOPLAM | 0.433 | 0.924 | 0.491 | 0.766 | False | False | False | KALDI |
 | full_llm_aggregator | S4 | TOPLAM | 0.433 | 0.924 | 0.491 | 0.766 | False | False | False | KALDI |
-| embedding_tfidf_demo | S4 | TOPLAM | 0.863 | 0.924 | 0.061 | -0.090 | True | True | True | GEÇTİ |
+| embedding | S4 | TOPLAM | 0.936 | 0.924 | -0.012 | -0.039 | True | True | True | GEÇTİ |
 | single_zeroshot:mock_a | TÜMÜ | TOPLAM | 0.753 | 0.919 | 0.166 | -0.355 | True | False | False | KALDI |
 | single_zeroshot:mock_b | TÜMÜ | TOPLAM | 0.567 | 0.919 | 0.352 | -0.834 | False | False | False | KALDI |
 | single_zeroshot:mock_c | TÜMÜ | TOPLAM | 0.664 | 0.919 | 0.255 | -0.635 | False | False | False | KALDI |
@@ -69,4 +69,4 @@
 | full | TÜMÜ | TOPLAM | 0.664 | 0.919 | 0.255 | 0.351 | False | False | False | KALDI |
 | full_median | TÜMÜ | TOPLAM | 0.646 | 0.919 | 0.273 | 0.425 | False | False | False | KALDI |
 | full_llm_aggregator | TÜMÜ | TOPLAM | 0.643 | 0.919 | 0.276 | 0.434 | False | False | False | KALDI |
-| embedding_tfidf_demo | TÜMÜ | TOPLAM | 0.871 | 0.919 | 0.047 | 0.013 | True | True | True | GEÇTİ |
+| embedding | TÜMÜ | TOPLAM | 0.886 | 0.919 | 0.032 | 0.035 | True | True | True | GEÇTİ |

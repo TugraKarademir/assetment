@@ -41,14 +41,19 @@ embedding:
   # İsteğe bağlı `revision: <commit>` ile sabitlenebilir; sabitlenmezse kullanılan commit manifeste yazılır.
   models:
     - name: intfloat/multilingual-e5-large
+      revision: 3d7cfbdacd47fdda877c5cd8a79fbcc4f2a574f3
       query_prefix: "query: "
       passage_prefix: "passage: "
     - name: intfloat/multilingual-e5-base
+      revision: d128750597153bb5987e10b1c3493a34e5a4502a
       query_prefix: "query: "
       passage_prefix: "passage: "
     - name: sentence-transformers/paraphrase-multilingual-mpnet-base-v2
+      revision: 4328cf26390c98c5e3c738b4460a05b95f4911f5
     - name: sentence-transformers/distiluse-base-multilingual-cased-v1
+      revision: 826fee3d516ebb14987355af373f5b69101c7006
     - name: BAAI/bge-m3
+      revision: 9a0624b896d81da7492a910ffa53731274b6cf3d
   # Yalnızca İngilizce modeller ve ince ayarsız ham BERT burada YASAKTIR (kod da denetler).
   forbidden_patterns: ["all-mpnet", "all-MiniLM", "bert-base-uncased", "bert-base-cased", "bert-base-multilingual"]
   ordinal_l2: 1.0

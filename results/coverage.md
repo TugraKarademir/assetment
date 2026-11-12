@@ -13,4 +13,4 @@
 | full | 360 | 360 | 1.000 |
 | full_median | 360 | 360 | 1.000 |
 | full_llm_aggregator | 360 | 360 | 1.000 |
-| embedding_tfidf_demo | 360 | 360 | 1.000 |
+| embedding | 360 | 360 | 1.000 |

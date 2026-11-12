@@ -305,10 +305,10 @@ results/     tablolar (CSV + Markdown), grafikler, manifest kopyaları
   istemcileri ile batch yolları canlı olarak çalıştırılmadı. İstek gövdeleri birim testleriyle, boru hattı ise mock
   sağlayıcıyla sınandı. Gemini için batch modu uygulanmadı; eşzamanlı çağrı kullanılır. İlk gerçek çalıştırmadan
   önce `--limit 2` ile küçük bir deneme yapılmalıdır.
-- **Gömme modelleri:** Geliştirme ortamında HuggingFace erişimi olmadığından gerçek gömme modelleri uçtan uca
-  çalıştırılamadı. Örnek sonuçlardaki `embedding_tfidf_demo`, yalnızca boru hattını sınayan bir karakter n-gram
-  TF-IDF kodlayıcısıdır. Sentetik metinler sınırlı bir cümle bankasından kurulduğu için bu demo yapay olarak
-  yüksek uyum gösterir ve yorumlanmamalıdır.
+- **Gömme modelleri:** Beş gömme modeli Hugging Face'ten indirilip sentetik altın sette gerçekten çalıştırıldı
+  (commit karmaları `experiment.yaml` içinde sabitlenmiştir). Sentetik metinler sınırlı bir cümle bankasından
+  kurulduğu için gömme koşulu sentetik veride yapay olarak yüksek uyum gösterir; bu, gerçek veri için bir beklenti
+  değildir.
 - **Mock modeller** gerçek dil modeli değildir. `results/` altındaki sayılar yalnızca çıktı biçimini gösterir.
 - **Kural tabanlı maskeleme** listede olmayan, küçük harfle yazılmış ya da yazım hatalı adları kaçırabilir. Gizli
   raporun elle gözden geçirilmesi önerilir.

@@ -20,6 +20,11 @@
 | full − full_llm_aggregator | S3 | TOPLAM | 30 | 0.747 | 0.740 | 0.007 | -0.003 | 0.028 | 0.475 |
 | full − full_llm_aggregator | S4 | TOPLAM | 30 | 0.509 | 0.433 | 0.076 | -0.029 | 0.179 | 0.129 |
 | full − full_llm_aggregator | TÜMÜ | TOPLAM | 120 | 0.664 | 0.643 | 0.021 | -0.015 | 0.060 | 0.286 |
+| full − embedding | S1 | TOPLAM | 30 | 0.564 | 0.815 | -0.251 | -0.555 | 0.019 | 0.080 |
+| full − embedding | S2 | TOPLAM | 30 | 0.788 | 0.849 | -0.061 | -0.174 | 0.020 | 0.160 |
+| full − embedding | S3 | TOPLAM | 30 | 0.747 | 0.886 | -0.139 | -0.335 | 0.014 | 0.074 |
+| full − embedding | S4 | TOPLAM | 30 | 0.509 | 0.936 | -0.427 | -0.602 | -0.264 | 0.000 |
+| full − embedding | TÜMÜ | TOPLAM | 120 | 0.664 | 0.886 | -0.223 | -0.339 | -0.122 | 0.000 |
 | full − full_zeroshot | S1 | TOPLAM | 30 | 0.564 | 0.560 | 0.004 | -0.281 | 0.303 | 0.909 |
 | full − full_zeroshot | S2 | TOPLAM | 30 | 0.788 | 0.844 | -0.056 | -0.190 | 0.058 | 0.361 |
 | full − full_zeroshot | S3 | TOPLAM | 30 | 0.747 | 0.607 | 0.140 | -0.082 | 0.357 | 0.212 |

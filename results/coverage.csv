@@ -12,4 +12,4 @@ full_equal_weight,360,360,1.0
 full,360,360,1.0
 full_median,360,360,1.0
 full_llm_aggregator,360,360,1.0
-embedding_tfidf_demo,360,360,1.0
+embedding,360,360,1.0
