@@ -163,7 +163,8 @@ def score(condition: str = typer.Option("full", help="full | panel_vote | single
 
 
 @app.command("check-models")
-def check_models_cmd(models: Path = ModelsOpt):
+def check_models_cmd(models: Path = ModelsOpt,
+                     keys: Optional[str] = typer.Option(None, help="Virgülle ayrılmış model anahtarları (varsayılan: tümü)")):
     """Her modelin uç noktasına ulaşılabildiğini ve geçerli JSON döndürdüğünü küçük bir istekle sınar."""
     from .providers import LLMRequest, make_provider
     mcfg = load_models(models)
@@ -192,7 +193,8 @@ def check_models_cmd(models: Path = ModelsOpt):
             return key, spec.model, None, None, f"HATA: {type(e).__name__}: {str(e)[:150]}", None
 
     async def run_all():
-        return [await probe(k) for k in [*mcfg.scorers, mcfg.aggregator]]
+        ks = keys.split(",") if keys else [*mcfg.scorers, mcfg.aggregator]
+        return [await probe(k) for k in ks]
 
     for key, model, returned, served, status, lat in asyncio.run(run_all()):
         typer.echo(f"[{key}] {model} -> {status} (dönen sürüm: {returned}, gecikme: {lat}s)")
@@ -205,7 +207,9 @@ def benchmark(models: Path = ModelsOpt,
               n: int = typer.Option(2, help="Soru başına ölçüm yanıtı sayısı (model başına çağrı = n × soru sayısı)"),
               n_gold: int = typer.Option(1200, help="Planlanan altın set büyüklüğü (gerçek çalışma: 4 × 300)"),
               n_all: int = typer.Option(3200, help="Planlanan toplam yanıt sayısı"),
-              condition: str = typer.Option("ablation", help="ablation | ablation_core")):
+              condition: str = typer.Option("ablation", help="ablation | ablation_core"),
+              keys: Optional[str] = typer.Option(None, help="Yalnızca bu modelleri ölç (ör. tek sunucuda önce "
+                                                 "puanlayıcılar, birleştirici ayrı)")):
     """Her modelin CPU sunucusundaki hızını ölçer ve tüm çalışmanın süresini tahmin eder."""
     from .benchmark import measure, project, workload
     from .engine import CallEngine
@@ -220,7 +224,8 @@ def benchmark(models: Path = ModelsOpt,
                    {"condition": "benchmark", "n_per_item": n, "models": mcfg.model_dump(mode="json")})
     engine = CallEngine(mcfg, run_id, exp.path("cache"), exp.path("logs_dir"))
     renderer = PromptRenderer(rationale_style=exp.prompt_options.get("rationale_style", "standard"))
-    speed = asyncio.run(measure(sample, bank, mcfg, engine, renderer, run_id))
+    speed = asyncio.run(measure(sample, bank, mcfg, engine, renderer, run_id,
+                                keys.split(",") if keys else None))
     typer.echo("ÖLÇÜLEN HIZ (gerçek istemler, Katman 1):\n" + df_to_markdown(speed, ".1f"))
     if (speed.valid < speed.calls).any():
         typer.echo("UYARI: bazı ölçüm çağrıları geçersiz/başarısız (first_error sütunu). Önce `check-models` çalıştırın.",

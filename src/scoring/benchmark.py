@@ -23,8 +23,8 @@ RETRY_OVERHEAD = 1.05  # doğrulama yeniden denemeleri için pay
 
 
 async def measure(responses: pd.DataFrame, bank: ItemBank, models: ModelsConfig, engine: CallEngine,
-                  renderer: PromptRenderer, run_id: str) -> pd.DataFrame:
-    keys = [*models.scorers, models.aggregator]
+                  renderer: PromptRenderer, run_id: str, keys: list[str] | None = None) -> pd.DataFrame:
+    keys = keys or [*models.scorers, models.aggregator]
     jobs = build_layer1_jobs(responses, bank, keys, "anchored", replicate=1, renderer=renderer, condition="benchmark")
     for j in jobs:
         j.request.metadata["replicate"] = f"bench-{run_id}"   # önbellekte gerçek puanlarla karışmasın
@@ -73,6 +73,10 @@ def project(work: pd.DataFrame, speed: pd.DataFrame) -> tuple[pd.DataFrame, pd.D
     """Katman başına duvar saati (paralel sunucular: en yavaş model) ve aşama toplamları."""
     spc = speed.set_index("model_key").sec_per_call
     w = work.copy()
+    missing = set(w.model_key) - set(spc.index)
+    if missing:
+        # Ölçülmeyen model (ör. tek sunucuda birleştirici ayrı çalışır): en hızlı ölçülen modelin süresi varsayılır
+        spc = pd.concat([spc, pd.Series({m: spc.min() for m in missing})])
     w["hours"] = w.calls * w.model_key.map(spc) * RETRY_OVERHEAD / 3600
     layer = (w.groupby(["aşama", "katman"], sort=False)
              .agg(calls=("calls", "sum"), wall_hours=("hours", "max"),

@@ -233,44 +233,93 @@ class CallEngine:
             self.stats["cost_usd_est"] += cost or 0.0
         return call_id
 
-    # -- doğrulamalı toplu yürütme ------------------------------------------------
-    async def run(self, jobs: list[Job]) -> list[Outcome]:
-        max_retries = self.models.retry.max_validation_retries
-        outcomes = [Outcome(job=j) for j in jobs]
+    # -- doğrulamalı yürütme -------------------------------------------------------
+    async def _send_one(self, req: LLMRequest) -> tuple[LLMResult, bool, str | None, str]:
+        key = self.cache_key(req)
+        hit = self.cache.get(key)
+        if hit:
+            self.stats["cache_hits"] += 1
+            return (LLMResult(hit["text"], hit.get("input_tokens"), hit.get("output_tokens"),
+                              hit.get("model_version_returned"), hit.get("latency_s", 0.0), hit.get("raw", {})),
+                    True, hit["call_id"], key)
+        if self.only_models is not None and req.model_key not in self.only_models:
+            self.stats["cache_only_skipped"] += 1
+            return LLMResult("", None, None, None, 0.0, error="cache-only: model bu çalıştırmada sunulmuyor"), False, None, key
+        return await self._call_one(req), False, None, key
+
+    def _handle(self, outcome: Outcome, job: Job, req: LLMRequest, attempt: int,
+                sent: tuple[LLMResult, bool, str | None, str]) -> LLMRequest | None:
+        """Sonucu doğrular, HEMEN kaydeder/önbelleğe yazar; yeniden deneme gerekiyorsa yeni isteği döndürür."""
+        res, hit, src, key = sent
+        if res.error and res.error.startswith("cache-only"):
+            outcome.error = res.error
+            return None
+        parsed, verr = (None, None)
+        if res.error is None:
+            parsed, verr = job.validate(res.text)
+        call_id = self._log(req, res, hit, src, key, parsed, verr)
+        outcome.call_ids.append(call_id)
+        if res.error is not None:
+            outcome.error = f"api: {res.error}"
+            self.stats["api_errors"] += 1
+            return None
+        if verr is None:
+            outcome.parsed, outcome.call_id, outcome.error = parsed, call_id, None
+            return None
+        outcome.error = f"validation: {verr}"
+        self.stats["validation_failures"] += 1
+        if attempt >= self.models.retry.max_validation_retries:
+            return None
+        return LLMRequest(req.model_key, req.system, [*req.messages,
+                          {"role": "assistant", "content": res.text or "(boş)"},
+                          {"role": "user", "content": CORRECTION_PROMPT.format(error=verr)}], dict(req.metadata))
+
+    async def _run_streaming(self, job: Job, outcome: Outcome) -> None:
+        """Tek iş: her deneme biter bitmez kaydedilir. Uzun (CPU) koşular kesilirse tamamlanan çağrılar kaybolmaz."""
+        req = job.request
+        for attempt in range(self.models.retry.max_validation_retries + 1):
+            req.metadata["attempt"] = attempt
+            req = self._handle(outcome, job, req, attempt, await self._send_one(req))
+            if req is None:
+                return
+
+    async def _run_batch_rounds(self, jobs: list[Job], outcomes: list[Outcome]) -> None:
+        """Toplu (batch) API'li modeller: deneme turları hâlinde gönderilir."""
         pending = list(range(len(jobs)))
         reqs = {i: jobs[i].request for i in pending}
-        for attempt in range(max_retries + 1):
+        for attempt in range(self.models.retry.max_validation_retries + 1):
             if not pending:
-                break
+                return
             for i in pending:
                 reqs[i].metadata["attempt"] = attempt
             results = await self._send([reqs[i] for i in pending])
             nxt = []
-            for i, (res, hit, src, key) in zip(pending, results):
-                if res.error and res.error.startswith("cache-only"):
-                    outcomes[i].error = res.error
-                    continue
-                parsed, verr = (None, None)
-                if res.error is None:
-                    parsed, verr = jobs[i].validate(res.text)
-                call_id = self._log(reqs[i], res, hit, src, key, parsed, verr)
-                outcomes[i].call_ids.append(call_id)
-                if res.error is not None:
-                    outcomes[i].error = f"api: {res.error}"
-                    self.stats["api_errors"] += 1
-                elif verr is None:
-                    outcomes[i].parsed, outcomes[i].call_id, outcomes[i].error = parsed, call_id, None
-                else:
-                    outcomes[i].error = f"validation: {verr}"
-                    self.stats["validation_failures"] += 1
-                    if attempt < max_retries:
-                        r = reqs[i]
-                        reqs[i] = LLMRequest(r.model_key, r.system, [*r.messages,
-                                             {"role": "assistant", "content": res.text or "(boş)"},
-                                             {"role": "user", "content": CORRECTION_PROMPT.format(error=verr)}],
-                                             dict(r.metadata))
-                        nxt.append(i)
+            for i, sent in zip(pending, results):
+                retry = self._handle(outcomes[i], jobs[i], reqs[i], attempt, sent)
+                if retry is not None:
+                    reqs[i] = retry
+                    nxt.append(i)
             pending = nxt
+
+    async def run(self, jobs: list[Job]) -> list[Outcome]:
+        outcomes = [Outcome(job=j) for j in jobs]
+        by_model: dict[str, list[int]] = defaultdict(list)
+        for i, j in enumerate(jobs):
+            by_model[j.request.model_key].append(i)
+
+        async def run_model(mk: str, idx: list[int]):
+            spec = self.models.spec(mk)
+            if self.use_batch and spec.batch and len(idx) > 1 and self.provider(mk).supports_batch:
+                await self._run_batch_rounds([jobs[i] for i in idx], [outcomes[i] for i in idx])
+            else:
+                self.provider(mk)  # semafor oluşturulsun
+                await asyncio.gather(*(self._run_streaming(jobs[i], outcomes[i]) for i in idx))
+
+        if self.sequential_models:
+            for mk, idx in by_model.items():
+                await run_model(mk, idx)
+        else:
+            await asyncio.gather(*(run_model(mk, idx) for mk, idx in by_model.items()))
         for o in outcomes:
             if o.parsed is None and not (o.error or "").startswith("cache-only"):
                 self.stats["final_failures"] += 1

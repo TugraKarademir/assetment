@@ -49,6 +49,6 @@ def test_cpu_panel_config():
     assert all(m.spec(k).open_weights for k in [*m.scorers, m.aggregator])
     assert len({m.spec(k).family for k in [*m.scorers, m.aggregator]}) == 4
     assert all(str(m.spec(k).model_revision).startswith("sha256:") for k in m.models)
-    for f in ("config/models.cpu.single.yaml", "config/models.gpu.vllm.yaml", "config/models.gpu.ollama.yaml",
+    for f in ("config/models.cpu.3servers.yaml", "config/models.cpu.single.yaml", "config/models.gpu.vllm.yaml", "config/models.gpu.ollama.yaml",
               "config/models.api.yaml", "config/models.mock.yaml"):
         load_models(f)

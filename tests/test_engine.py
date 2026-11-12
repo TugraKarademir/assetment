@@ -172,3 +172,30 @@ def test_openai_compat_options():
     b = p._body(LLMRequest("x", "SİSTEM", [{"role": "user", "content": "u"}]))
     assert b["messages"] == [{"role": "user", "content": "SİSTEM\n\nu"}]
     assert b["extra_body"]["chat_template_kwargs"]["enable_thinking"] is False
+
+
+def test_interrupted_run_keeps_completed_calls(tmp_path):
+    """Uzun CPU koşusu yarıda kesilirse biten çağrılar önbellekte ve kayıtta kalmalı (kaldığı yerden devam)."""
+
+    class Slow(FakeProvider):
+        async def complete(self, req):
+            if "yavaş" in req.messages[0]["content"]:
+                await asyncio.sleep(60)
+            return LLMResult('{"ok": 1}', 10, 5, "fake", 0.01)
+
+    eng = _engine(tmp_path, Slow([]))
+    fast, slow = _job(), _job()
+    slow.request.messages = [{"role": "user", "content": "yavaş"}]
+    slow.request.metadata["response_id"] = "R2"
+
+    async def go():
+        try:
+            await asyncio.wait_for(eng.run([fast, slow]), timeout=0.5)
+        except asyncio.TimeoutError:
+            pass
+    asyncio.run(go())
+    lines = (tmp_path / "logs/run1/calls.jsonl").read_text().splitlines()
+    assert len(lines) == 1
+    prov = FakeProvider([])
+    [o] = asyncio.run(_engine(tmp_path, prov).run([_job()]))
+    assert prov.calls == 0 and o.parsed == {"ok": 1}

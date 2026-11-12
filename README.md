@@ -43,30 +43,33 @@ uv run pytest                            # birim testleri
 
 **Hiçbir API anahtarı koda yazılmaz**; tümü `.env` dosyasından okunur. `.env` dosyası `.gitignore` kapsamındadır.
 
-## Tamamen yerel panel — CPU sunucuları (araştırmanın seçimi)
+## Tamamen yerel panel — tek 64 çekirdekli CPU sunucusu (araştırmanın seçimi)
 
-Puanlama, kurumdaki **üç CPU sunucusunda** (GPU yok) çalışan açık ağırlıklı modellerle yapılır. Öğrenci yanıtları
-kurumdan dışarı çıkmaz ve API maliyeti yoktur. Her puanlayıcı ayrı bir sunucuda çalıştığından üç model aynı anda
-puanlar:
+Puanlama, kurumdaki **tek bir 64 çekirdekli sanal sunucuda** (GPU yok) çalışan açık ağırlıklı modellerle yapılır.
+Model sunucuları yalnızca `127.0.0.1`'e bağlanır: öğrenci yanıtları makineden dışarı çıkmaz ve API maliyeti yoktur.
+Puanlama iki aşamada yürür:
 
-- 40 çekirdekli sunucu: Qwen2.5-14B ve birleştirici Aya-Expanse-8B
-- 28 çekirdekli sunucu: Gemma-3-12B
-- 20 çekirdekli sunucu: Llama-3.1-8B
+- **Aşama A (Katman 1–2):** Qwen2.5-14B, Gemma-3-12B ve Llama-3.1-8B aynı anda çalışır; çekirdekler model
+  boyutuna göre paylaştırılır.
+- **Aşama B (Katman 3):** Birleştirici Aya-Expanse-8B tüm çekirdeklerle tek başına çalışır.
 
-Modeller llama.cpp `llama-server` ya da Ollama ile, 4-bit GGUF biçiminde sunulur.
+Modeller llama.cpp `llama-server` ile 4-bit GGUF biçiminde sunulur; dosyaların SHA-256 özetleri sabittir.
 
-Kurulum, model indirme ve SHA-256 doğrulama, iş parçacığı ayarları, hız ölçümü ve süre planı için:
-**[docs/cpu_sunucu_kurulumu.md](docs/cpu_sunucu_kurulumu.md)**.
+Kurulum, RAM gereksinimi, pilot, tam çalışma ve kesintiden sonra devam etme için:
+**[docs/cpu64_tek_sunucu.md](docs/cpu64_tek_sunucu.md)**.
 
 ```bash
-uv run scoring check-models            # her sunucu: bağlantı + geçerli JSON + bağlam kesilmesi testi
-uv run scoring benchmark --n 2         # gerçek istemlerle hız ölçümü + tüm çalışmanın süre tahmini
-uv run scoring run-ablation            # tam ablasyon (CPU'da daraltılmış: score --condition ablation_core)
+bash scripts/cpu64/benchmark.sh             # hız ölçümü + tüm çalışmanın süre tahmini
+LIMIT=5 bash scripts/cpu64/run_study.sh     # pilot (soru başına 5 yanıt)
+bash scripts/cpu64/run_study.sh             # tam çalışma (kesilirse yeniden çalıştırın, kaldığı yerden devam eder)
+bash scripts/cpu64/run_stability.sh         # kararlılık: farklı bir günde
 ```
 
 CPU'da süreyi çıktı uzunluğu belirlediğinden gerekçeler varsayılan olarak tek cümledir
-(`experiment.yaml > prompt.rationale_style: short`). İleride GPU erişimi olursa `config/models.gpu.vllm.yaml` ve
-[docs/yerel_gpu_kurulumu.md](docs/yerel_gpu_kurulumu.md) hazırdır.
+(`experiment.yaml > prompt.rationale_style: short`). Diğer düzenler:
+
+- üç ayrı CPU sunucusu: `config/models.cpu.3servers.yaml` ve [docs/cpu_sunucu_kurulumu.md](docs/cpu_sunucu_kurulumu.md);
+- GPU: `config/models.gpu.*.yaml` ve [docs/yerel_gpu_kurulumu.md](docs/yerel_gpu_kurulumu.md).
 
 ## Hızlı deneme (sentetik veri + mock modeller, anahtar gerekmez)
 
