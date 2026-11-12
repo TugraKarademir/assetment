@@ -1,0 +1,62 @@
+# TAMAMEN YEREL, AÇIK AĞIRLIKLI panel — Ollama (en kolay kurulum; vLLM'den belirgin biçimde yavaş).
+# Tüm modeller tek Ollama sunucusundan sunulur: LOCAL_BASE_URL=http://gpu-sunucu:11434/v1
+# ÖNEMLİ: Ollama varsayılan bağlam uzunluğu istemlerimiz için KISADIR ve fazlası sessizce kesilir.
+#   Sunucuyu OLLAMA_CONTEXT_LENGTH=8192 ile başlatın ve `uv run scoring check-models --models ...` ile doğrulayın.
+# Tek GPU'da modeller arasında gidip gelmemek için puanlamayı --sequential-models ile çalıştırın.
+# Etiketleri sunucuda `ollama list` ile doğrulayın; tekrar üretilebilirlik için model_revision alanına
+# `ollama show <model> --modelfile` çıktısındaki özet (digest) değerini yazın.
+
+scorers: [qwen, gemma, mistral]
+aggregator: llama
+
+models:
+  qwen:
+    provider: openai_compat
+    model: qwen2.5:32b-instruct-q4_K_M
+    family: Alibaba Qwen
+    open_weights: true
+    model_revision: ""          # <- ollama digest
+    quantization: GGUF Q4_K_M
+    served_by: Ollama
+    base_url_env: LOCAL_BASE_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    max_concurrency: 4
+  gemma:
+    provider: openai_compat
+    model: gemma3:27b
+    family: Google Gemma
+    open_weights: true
+    model_revision: ""
+    quantization: GGUF Q4_K_M
+    served_by: Ollama
+    base_url_env: LOCAL_BASE_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    max_concurrency: 4
+  mistral:
+    provider: openai_compat
+    model: mistral-small3.1:24b
+    family: Mistral AI
+    open_weights: true
+    model_revision: ""
+    quantization: GGUF Q4_K_M
+    served_by: Ollama
+    base_url_env: LOCAL_BASE_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    max_concurrency: 4
+  llama:
+    provider: openai_compat
+    model: llama3.3:70b
+    family: Meta Llama
+    open_weights: true
+    model_revision: ""
+    quantization: GGUF Q4_K_M
+    served_by: Ollama
+    base_url_env: LOCAL_BASE_URL
+    params: {temperature: 0, seed: 20261112, max_tokens: 2000}
+    max_concurrency: 2
+
+retry:
+  max_validation_retries: 2
+  max_api_retries: 6
+  backoff_initial_seconds: 2
+  backoff_max_seconds: 60

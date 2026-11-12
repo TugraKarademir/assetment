@@ -115,3 +115,60 @@ def test_openai_body_has_temperature_and_json():
     b = p._body(LLMRequest("x", "s", [{"role": "user", "content": "u"}]))
     assert b["temperature"] == 0 and b["seed"] == 1 and b["response_format"] == {"type": "json_object"}
     assert b["messages"][0] == {"role": "system", "content": "s"}
+
+
+def test_only_models_reads_others_from_cache_only(tmp_path):
+    # Önce 'a' modeli için önbelleğe bir sonuç koy
+    asyncio.run(_engine(tmp_path, FakeProvider(['{"ok": 1}'])).run([_job()]))
+    eng = CallEngine(_models(), "run2", tmp_path / "cache.sqlite", tmp_path / "logs", only_models={"b"})
+    prov = FakeProvider([])
+    eng._providers["a"] = prov
+    eng._sems["a"] = asyncio.Semaphore(1)
+    j_cached = _job()
+    j_missing = _job(); j_missing.request.metadata["response_id"] = "R2"
+    j_missing.request.messages = [{"role": "user", "content": "başka"}]
+    o1, o2 = asyncio.run(eng.run([j_cached, j_missing]))
+    assert prov.calls == 0
+    assert o1.parsed == {"ok": 1}
+    assert o2.parsed is None and o2.error.startswith("cache-only") and o2.call_ids == []
+    logged = (tmp_path / "logs/run2/calls.jsonl").read_text().splitlines()
+    assert len(logged) == 1  # yalnızca önbellek isabeti kaydedildi; yapılmayan çağrı kaydedilmez
+
+
+def test_sequential_models_order(tmp_path):
+    order = []
+
+    class P(FakeProvider):
+        def __init__(self, name):
+            super().__init__(['{"ok": 1}'] * 3)
+            self.name_ = name
+
+        async def complete(self, req):
+            order.append(self.name_)
+            await asyncio.sleep(0.01)
+            return await super().complete(req)
+
+    eng = CallEngine(_models(), "run3", tmp_path / "c.sqlite", tmp_path / "logs", sequential_models=True)
+    for k in ("a", "b"):
+        eng._providers[k] = P(k)
+        eng._sems[k] = asyncio.Semaphore(4)
+    jobs = []
+    for k in ("a", "b", "a", "b"):
+        j = _job(); j.request.model_key = k
+        j.request.messages = [{"role": "user", "content": f"{k}{len(jobs)}"}]
+        jobs.append(j)
+    asyncio.run(eng.run(jobs))
+    assert order == ["a", "a", "b", "b"]
+
+
+def test_openai_compat_options():
+    from scoring.config import ModelSpec
+    from scoring.providers.openai_provider import OpenAIProvider
+    spec = ModelSpec(provider="openai_compat", model="qwen3", params={
+        "temperature": 0, "system_in_user": True,
+        "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}})
+    p = OpenAIProvider.__new__(OpenAIProvider)
+    p.spec = spec
+    b = p._body(LLMRequest("x", "SİSTEM", [{"role": "user", "content": "u"}]))
+    assert b["messages"] == [{"role": "user", "content": "SİSTEM\n\nu"}]
+    assert b["extra_body"]["chat_template_kwargs"]["enable_thinking"] is False

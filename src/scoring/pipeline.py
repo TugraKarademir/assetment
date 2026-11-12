@@ -52,9 +52,12 @@ def store_raw_scores(path: str | Path, new: pd.DataFrame) -> pd.DataFrame:
 
 async def run_pipeline(responses: pd.DataFrame, bank: ItemBank, models: ModelsConfig, exp: Experiment,
                        plan: LayerPlan, replicate: int, run_id: str, condition: str, use_batch: bool = True,
-                       include_anchors_later_layers: bool = True) -> tuple[pd.DataFrame, dict]:
+                       include_anchors_later_layers: bool = True, sequential_models: bool = False,
+                       only_models: set[str] | None = None, max_layer: int = 3) -> tuple[pd.DataFrame, dict]:
     renderer = PromptRenderer()
-    engine = CallEngine(models, run_id, exp.path("cache"), exp.path("logs_dir"), use_batch=use_batch)
+    engine = CallEngine(models, run_id, exp.path("cache"), exp.path("logs_dir"), use_batch=use_batch,
+                        sequential_models=sequential_models, only_models=only_models)
+    full_panel = exp.aggregation.get("require_full_panel", True)
     seed = exp.seeds["layer2_order"]
     scorers = models.scorers
     all_rows: list[pd.DataFrame] = []
@@ -65,8 +68,12 @@ async def run_pipeline(responses: pd.DataFrame, bank: ItemBank, models: ModelsCo
             return pd.DataFrame(columns=ROW_COLUMNS)
         outcomes = await engine.run(jobs)
         rows = outcomes_to_rows(outcomes, run_id)
-        notes[label] = {"jobs": len(jobs), "failed": int(sum(o.parsed is None for o in outcomes))}
-        all_rows.append(rows)
+        rows_store = rows[~rows.error.fillna("").str.startswith("cache-only")]
+        notes[label] = {"jobs": len(jobs),
+                        "failed": int(sum(o.parsed is None and not (o.error or "").startswith("cache-only")
+                                          for o in outcomes)),
+                        "cache_only_missing": int(sum((o.error or "").startswith("cache-only") for o in outcomes))}
+        all_rows.append(rows_store)
         return rows
 
     variants = [v for v, on in (("anchored", plan.layer1_anchored or plan.layer2_anchored or plan.layer3),
@@ -77,14 +84,15 @@ async def run_pipeline(responses: pd.DataFrame, bank: ItemBank, models: ModelsCo
                                f"layer1_{v}")
     l2: dict[str, pd.DataFrame] = {}
     for v, on in (("anchored", plan.layer2_anchored or plan.layer3), ("zeroshot", plan.layer2_zeroshot)):
-        if on:
+        if on and max_layer >= 2:
             jobs, skipped = build_layer2_jobs(responses, bank, l1[v], scorers, v, replicate, renderer, seed,
-                                              include_anchors_later_layers, condition)
+                                              include_anchors_later_layers, condition, full_panel)
             l2[v] = await run_jobs(jobs, f"layer2_{v}")
             notes[f"layer2_{v}_skipped"] = len(skipped)
-    if plan.layer3:
+    if plan.layer3 and max_layer >= 3:
         jobs, skipped = build_layer3_jobs(responses, bank, l2["anchored"], scorers, models.aggregator, "anchored",
-                                          replicate, renderer, seed, include_anchors_later_layers, condition)
+                                          replicate, renderer, seed, include_anchors_later_layers, condition,
+                                          full_panel)
         await run_jobs(jobs, "layer3_anchored")
         notes["layer3_skipped"] = len(skipped)
 

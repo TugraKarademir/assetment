@@ -35,8 +35,10 @@ aggregation:
   rounding: half_up      # half_up | half_even
   weights_level: item    # item | item_criterion | global
   weights_method: cls    # kısıtlı en küçük kareler (w>=0, toplam=1)
+  require_full_panel: true  # K2/K3 yalnızca TÜM puanlayıcıların önceki katman puanı varsa yürütülür
 
 embedding:
+  # İsteğe bağlı `revision: <commit>` ile sabitlenebilir; sabitlenmezse kullanılan commit manifeste yazılır.
   models:
     - name: intfloat/multilingual-e5-large
       query_prefix: "query: "

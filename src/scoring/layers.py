@@ -97,7 +97,8 @@ def _shuffled_labels(model_keys: list[str], seed: int, rid: str, layer: int) -> 
 
 def build_layer2_jobs(responses: pd.DataFrame, bank: ItemBank, l1_rows: pd.DataFrame, model_keys: list[str],
                       variant: str, replicate: int, renderer: PromptRenderer, order_seed: int,
-                      include_anchors: bool = True, condition: str = "") -> tuple[list[Job], list[str]]:
+                      include_anchors: bool = True, condition: str = "",
+                      require_full_panel: bool = True) -> tuple[list[Job], list[str]]:
     """Her model kendi K1 puanını ve diğerlerininkini anonim (Model A/B/C), rastgele sırada görür."""
     tmpl = TEMPLATES[("layer2", variant)]
     evals = _evaluations_by_response(l1_rows)
@@ -107,8 +108,9 @@ def build_layer2_jobs(responses: pd.DataFrame, bank: ItemBank, l1_rows: pd.DataF
         ev = evals.get(r.response_id, {})
         avail = [k for k in model_keys if k in ev]
         anchors = item.anchors if (variant == "anchored" and include_anchors) else []
+        min_n = len(model_keys) if require_full_panel else 2
         for mk in model_keys:
-            if mk not in ev or len(avail) < 2:
+            if mk not in ev or len(avail) < min_n:
                 skipped.append(f"{r.response_id}/{mk}")
                 continue
             labels = _shuffled_labels(avail, order_seed, r.response_id, 2)
@@ -129,7 +131,8 @@ def build_layer2_jobs(responses: pd.DataFrame, bank: ItemBank, l1_rows: pd.DataF
 
 def build_layer3_jobs(responses: pd.DataFrame, bank: ItemBank, l2_rows: pd.DataFrame, model_keys: list[str],
                       aggregator: str, variant: str, replicate: int, renderer: PromptRenderer, order_seed: int,
-                      include_anchors: bool = True, condition: str = "") -> tuple[list[Job], list[str]]:
+                      include_anchors: bool = True, condition: str = "",
+                      require_full_panel: bool = True) -> tuple[list[Job], list[str]]:
     tmpl = TEMPLATES[("layer3", variant)]
     evals = _evaluations_by_response(l2_rows)
     jobs, skipped = [], []
@@ -137,7 +140,7 @@ def build_layer3_jobs(responses: pd.DataFrame, bank: ItemBank, l2_rows: pd.DataF
         item = bank[r.item_id]
         ev = evals.get(r.response_id, {})
         avail = [k for k in model_keys if k in ev]
-        if len(avail) < 2:
+        if len(avail) < (len(model_keys) if require_full_panel else 2):
             skipped.append(r.response_id)
             continue
         labels = _shuffled_labels(avail, order_seed, r.response_id, 3)

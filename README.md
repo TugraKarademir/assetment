@@ -43,6 +43,19 @@ uv run pytest                            # birim testleri
 
 **Hiçbir API anahtarı koda yazılmaz**; tümü `.env` dosyasından okunur. `.env` dosyası `.gitignore` kapsamındadır.
 
+## Tamamen yerel panel (araştırmanın seçimi)
+
+Puanlama, üniversitenin GPU sunucusunda çalışan **açık ağırlıklı** modellerle yapılır; öğrenci yanıtları
+sunucudan dışarı çıkmaz ve API maliyeti yoktur. Kurulum, bellek planı, tek GPU'da modelleri sırayla çalıştırma
+(`--only-models`, `--max-layer`) ve Ollama seçeneği (`--sequential-models`) için:
+**[docs/yerel_gpu_kurulumu.md](docs/yerel_gpu_kurulumu.md)**.
+
+```bash
+uv run scoring check-models            # her uç nokta: bağlantı + geçerli JSON + bağlam uzunluğu testi
+uv run scoring run-ablation --limit 5 -y --no-evaluate   # kısa deneme
+uv run scoring run-ablation            # tam ablasyon
+```
+
 ## Hızlı deneme (sentetik veri + mock modeller, anahtar gerekmez)
 
 ```bash
@@ -58,7 +71,9 @@ değerlendirme → yanlılık verisi → R modeli.
 | Dosya | İçerik |
 |---|---|
 | `items.yaml` | Sorular, Bloom basamağı (alt/üst), analitik ölçütler, puan aralığı (varsayılan 0–4), her düzeyin tanımlayıcısı, çapa yanıtlar (her ölçütün her düzeyi için en az bir tane; kod denetler), referans yanıt |
-| `models.yaml` | Model rolleri (`scorers`, `aggregator`), sağlayıcı, **tam sürüm kimliği**, parametreler, batch, eşzamanlılık, fiyat. En az bir model `open_weights: true` olmalıdır (kod denetler) |
+| `models.yaml` | **Varsayılan: tamamen yerel, açık ağırlıklı panel (vLLM)** — Qwen, Gemma, Mistral puanlayıcı; Llama birleştirici. Model rolleri, Hugging Face kimliği, `model_revision` (commit), niceleme, parametreler, eşzamanlılık. En az bir model `open_weights: true` olmalıdır (kod denetler) |
+| `models.local.ollama.yaml` | Aynı panel, Ollama ile (en kolay kurulum) |
+| `models.api.yaml` | Ticari API paneli (OpenAI/Anthropic/Google + yerel Qwen) — varsayılan değildir |
 | `models.mock.yaml` | Anahtarsız uçtan uca deneme için sahte panel |
 | `moodle_columns.yaml` | Türkçe/İngilizce Moodle başlıkları için esnek sütun eşlemesi, soru sırası → `item_id` |
 | `experiment.yaml` | Tohumlar, yollar, altın set boyutu, kat sayısı, yuvarlama kuralı, ağırlık düzeyi, gömme modelleri, bootstrap, eşikler |
@@ -81,6 +96,7 @@ uv run scoring --help
 | `anonymize [--export dosya.xlsx]` | Moodle CSV/XLSX okur, kimlikleri koda çevirir, metin içi kişisel veriyi maskeler |
 | `sample-gold [--per-item 300] [--synthetic]` | Katmanlı seçkisiz altın set, öğrenci düzeyinde 5 kat, puanlayıcı Excel'i, Label Studio JSON'u |
 | `check-leakage` | Çapaların altın setten gelmediğini denetler (ihlalde çıkış kodu 1) |
+| `check-models` | Her modelin uç noktasını sınar: bağlantı, JSON çıktısı, bağlam kesilmesi |
 | `estimate-cost --condition ablation` | İstemleri gerçekten oluşturup token ve maliyet tahmini yapar |
 | `score --condition full --subset gold\|all [--replicate 2] [-y]` | LLM katmanlarını çalıştırır; önce maliyet tahmini gösterir ve onay ister |
 | `run-ablation [-y] [--offline-embedding-demo]` | **Tek komutla** tüm ablasyon koşulları + gömme koşulu + değerlendirme |
@@ -276,13 +292,16 @@ results/     tablolar (CSV + Markdown), grafikler, manifest kopyaları
 
 ## Sınırlılıklar
 
-- **Determinizm:** Anthropic'in güncel API sürümü `temperature` parametresini kabul etmez. Bu sağlayıcıda sıcaklık
+- **Yerel modeller:** Açık ağırlıklı modeller ticari öncü modellerden zayıf olabilir; bu, bulguların
+  genellenebilirliği açısından raporlanmalıdır. Niceleme (AWQ/FP8/GGUF) puanları az da olsa etkileyebilir;
+  kullanılan niceleme ve commit karması her çağrı kaydına (`model_meta`) yazılır.
+- **Determinizm:** (Ticari API paneli kullanılırsa) Anthropic'in güncel API sürümü `temperature` parametresini kabul etmez. Bu sağlayıcıda sıcaklık
   gönderilmez, düşük `effort` kullanılır ve kayıtta "unsupported" olarak işaretlenir. OpenAI ve Gemini'de sıcaklık
   0 ve `seed` kullanılır, ancak bu sağlayıcılar da tam determinizm garanti etmez. Bu nedenle kararlılık ayrıca
   ölçülür ve önbellek, aynı çağrının yeniden üretilmesine değil yeniden *kullanılmasına* dayanır.
 - **Model sürümleri:** `models.yaml` içindeki kimlikler örnektir. Gerçek çalışmadan önce tarihli sürüm kimlikleriyle
   güncellenmelidir. Sağlayıcının döndürdüğü sürüm adı her çağrıda ayrıca kaydedilir.
-- **Doğrulanmamış canlı yollar:** Geliştirme ortamında API anahtarı olmadığından OpenAI, Anthropic ve Gemini
+- **Doğrulanmamış canlı yollar:** Geliştirme ortamında GPU ve API anahtarı olmadığından vLLM/Ollama sunucuları ile OpenAI, Anthropic ve Gemini
   istemcileri ile batch yolları canlı olarak çalıştırılmadı. İstek gövdeleri birim testleriyle, boru hattı ise mock
   sağlayıcıyla sınandı. Gemini için batch modu uygulanmadı; eşzamanlı çağrı kullanılır. İlk gerçek çalıştırmadan
   önce `--limit 2` ile küçük bir deneme yapılmalıdır.

@@ -36,13 +36,26 @@ FORBIDDEN_DEFAULT = ["all-mpnet", "all-MiniLM", "bert-base-uncased", "bert-base-
 # ----------------------------------------------------------------------------- kodlayıcılar
 class SentenceTransformerEncoder:
     def __init__(self, name: str, query_prefix: str = "", passage_prefix: str = "", cache_dir: str | Path | None = None,
-                 forbidden: list[str] | None = None):
+                 forbidden: list[str] | None = None, revision: str | None = None):
         if any(b.lower() in name.lower() for b in (forbidden or FORBIDDEN_DEFAULT)):
             raise ValueError(f"Yasak gömme modeli: {name}")
         from sentence_transformers import SentenceTransformer  # isteğe bağlı bağımlılık: uv sync --extra embeddings
         self.name, self.qp, self.pp = name, query_prefix, passage_prefix
-        self.model = SentenceTransformer(name, device="cpu")
+        self.model = SentenceTransformer(name, device="cpu", revision=revision)
+        self.revision = revision or self._resolve_revision(name)
         self.cache_dir = Path(cache_dir) if cache_dir else None
+
+    @staticmethod
+    def _resolve_revision(name: str) -> str | None:
+        """Yerel önbellekteki anlık görüntünün (snapshot) Hugging Face commit karması."""
+        try:
+            from huggingface_hub import scan_cache_dir
+            for repo in scan_cache_dir().repos:
+                if repo.repo_id == name:
+                    return sorted(repo.revisions, key=lambda r: r.last_modified)[-1].commit_hash
+        except Exception:
+            return None
+        return None
 
     def encode(self, texts: list[str], kind: str) -> np.ndarray:
         prefix = self.qp if kind == "query" else self.pp

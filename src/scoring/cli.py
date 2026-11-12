@@ -130,7 +130,11 @@ def score(condition: str = typer.Option("full", help="full | panel_vote | single
           replicate: int = typer.Option(1, help="Kararlılık için 2 (önbellek ayrı tutulur)"),
           yes: bool = typer.Option(False, "--yes", "-y", help="Maliyet onayını atla"),
           no_batch: bool = typer.Option(False, help="Toplu (batch) API kullanma"),
-          limit: Optional[int] = typer.Option(None, help="Soru başına en fazla N yanıt (deneme için)")):
+          limit: Optional[int] = typer.Option(None, help="Soru başına en fazla N yanıt (deneme için)"),
+          sequential_models: bool = typer.Option(False, help="Modelleri aynı anda değil sırayla çağır (tek GPU / Ollama)"),
+          only_models: Optional[str] = typer.Option(None, help="Virgülle ayrılmış model anahtarları: yalnızca bunlar "
+                                                    "çağrılır, diğerleri yalnızca önbellekten okunur (tek GPU / vLLM)"),
+          max_layer: int = typer.Option(3, help="Bu katmandan sonrasını çalıştırma (1, 2 ya da 3)")):
     """LLM katmanlarını çalıştırır ve ham puanları depoya ekler."""
     from .manifest import new_run_id, write_manifest
     from .pipeline import CONDITION_PLANS, estimate_cost, run_pipeline, store_raw_scores
@@ -145,12 +149,54 @@ def score(condition: str = typer.Option("full", help="full | panel_vote | single
                    exp.seeds, {"condition": condition, "subset": subset, "replicate": replicate,
                                "n_responses": len(responses), "models": mcfg.model_dump(mode="json"),
                                "plan": plan.__dict__})
+    only = set(only_models.split(",")) if only_models else None
+    if only and not only <= set(mcfg.models):
+        raise typer.BadParameter(f"Bilinmeyen model anahtarı: {only - set(mcfg.models)}")
     new, notes = asyncio.run(run_pipeline(responses, bank, mcfg, exp, plan, replicate, run_id, condition,
-                                          use_batch=not no_batch))
+                                          use_batch=not no_batch, sequential_models=sequential_models,
+                                          only_models=only, max_layer=max_layer))
     store_raw_scores(exp.path("raw_scores"), new)
     typer.echo(f"Çalıştırma {run_id} tamamlandı. Kayıt: logs/{run_id}/calls.jsonl")
     for k, v in notes.items():
         typer.echo(f"  {k}: {v}")
+
+
+@app.command("check-models")
+def check_models_cmd(models: Path = ModelsOpt):
+    """Her modelin uç noktasına ulaşılabildiğini ve geçerli JSON döndürdüğünü küçük bir istekle sınar."""
+    from .providers import LLMRequest, make_provider
+    mcfg = load_models(models)
+
+    async def probe(key):
+        spec = mcfg.spec(key)
+        try:
+            prov = make_provider(spec)
+            served = None
+            if spec.provider == "openai_compat":
+                served = [m.id async for m in prov.client.models.list()]
+            res = await prov.complete(LLMRequest(key, "Yalnızca JSON döndür.",
+                                                 [{"role": "user", "content": 'Şunu aynen döndür: {"ok": true}'}]))
+            status = "HATA: " + res.error if res.error else ("JSON tamam" if '"ok"' in res.text else f"beklenmeyen: {res.text[:80]}")
+            # Bağlam uzunluğu testi: istemin EN BAŞINA bir kod konur, ~3.500 token dolgu eklenir.
+            # Sunucu bağlamı kesiyorsa (ör. Ollama varsayılan num_ctx) kod kaybolur -> rubrik de kaybolur.
+            filler = " ".join(["Bu cümle bağlam uzunluğu testi için eklenmiş dolgu metnidir."] * 450)
+            long = await prov.complete(LLMRequest(key, "Yalnızca JSON döndür.", [{"role": "user", "content":
+                   f"GİZLİ KOD: KESTANE-7351.\n{filler}\nMetnin EN BAŞINDA verilen gizli kodu "
+                   '{"kod": "<kod>"} biçiminde döndür.'}]))
+            ctx_ok = "7351" in (long.text or "")
+            status += f" | uzun istem ({long.input_tokens} token): " + ("bağlam TAMAM" if ctx_ok else
+                      "BAĞLAM KESİLİYOR olabilir — sunucuda bağlam uzunluğunu ≥ 8192 yapın")
+            return key, spec.model, res.model_version_returned, served, status, round(res.latency_s, 2)
+        except Exception as e:
+            return key, spec.model, None, None, f"HATA: {type(e).__name__}: {str(e)[:150]}", None
+
+    async def run_all():
+        return [await probe(k) for k in [*mcfg.scorers, mcfg.aggregator]]
+
+    for key, model, returned, served, status, lat in asyncio.run(run_all()):
+        typer.echo(f"[{key}] {model} -> {status} (dönen sürüm: {returned}, gecikme: {lat}s)")
+        if served is not None and model not in served:
+            typer.echo(f"   UYARI: sunucuda sunulan modeller: {served}")
 
 
 def _gold_context():
@@ -188,12 +234,14 @@ def embed_baseline_cmd(offline_demo: bool = typer.Option(False, help="HuggingFac
             specs = [m for m in specs if m["name"] in keep]
         encoders = [SentenceTransformerEncoder(m["name"], m.get("query_prefix", ""), m.get("passage_prefix", ""),
                                                cache_dir="data/derived/embedding_cache",
-                                               forbidden=emb.get("forbidden_patterns")) for m in specs]
+                                               forbidden=emb.get("forbidden_patterns"), revision=m.get("revision"))
+                    for m in specs]
         condition = "embedding"
     run_id = new_run_id(condition)
     write_manifest(run_id, exp.path("logs_dir"), exp.path("results_dir"),
                    ["config/items.yaml", "config/experiment.yaml"], exp.seeds,
-                   {"condition": condition, "encoders": [e.name for e in encoders]})
+                   {"condition": condition, "encoders": [{"name": e.name, "revision": getattr(e, "revision", None)}
+                                                          for e in encoders]})
     feats = similarity_features(gold, bank, encoders, emb.get("softmax_temperature", 0.05))
     y = consensus[["response_id", "criterion_id", "consensus"]].rename(columns={"consensus": "y"})
     preds, coefs = cv_embedding_scores(feats, y, folds, criteria_frame(bank)[["item_id", "criterion_id", "score_min", "score_max"]],
@@ -233,9 +281,10 @@ def build_conditions_cmd(models: Path = ModelsOpt, replicate: int = 1):
 def run_ablation(models: Path = ModelsOpt, yes: bool = typer.Option(False, "--yes", "-y"),
                  no_batch: bool = False, offline_embedding_demo: bool = typer.Option(False),
                  skip_embedding: bool = False, evaluate_after: bool = typer.Option(True, "--evaluate/--no-evaluate"),
-                 limit: Optional[int] = None):
+                 limit: Optional[int] = None, sequential_models: bool = typer.Option(False)):
     """Tüm ablasyon koşullarını tek komutla üretir: LLM katmanları + gömme koşulu + koşul puanları (+ değerlendirme)."""
-    score(condition="ablation", subset="gold", models=models, replicate=1, yes=yes, no_batch=no_batch, limit=limit)
+    score(condition="ablation", subset="gold", models=models, replicate=1, yes=yes, no_batch=no_batch, limit=limit,
+          sequential_models=sequential_models, only_models=None, max_layer=3)
     if not skip_embedding:
         embed_baseline_cmd(offline_demo=offline_embedding_demo, models_subset=None)
     build_conditions_cmd(models=models, replicate=1)

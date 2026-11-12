@@ -98,12 +98,18 @@ class Outcome:
 
 class CallEngine:
     def __init__(self, models: ModelsConfig, run_id: str, cache_path: str | Path, logs_dir: str | Path,
-                 use_batch: bool = True, batch_poll_seconds: float = 30):
+                 use_batch: bool = True, batch_poll_seconds: float = 30, sequential_models: bool = False,
+                 only_models: set[str] | None = None):
         self.models = models
         self.run_id = run_id
         self.cache = Cache(cache_path)
         self.logger = CallLogger(Path(logs_dir) / run_id / "calls.jsonl")
         self.use_batch = use_batch
+        # Tek GPU: modeller aynı anda değil, sırayla çağrılır (Ollama model değişimini en aza indirir)
+        self.sequential_models = sequential_models
+        # Yalnızca bu modeller çağrılır; diğerlerinin sonuçları SADECE önbellekten okunur (tek GPU'da vLLM ile
+        # modeller sırayla ayağa kaldırıldığında). Önbellekte olmayan çağrı yapılmaz ve kaydedilmez.
+        self.only_models = set(only_models) if only_models else None
         self.batch_poll_seconds = batch_poll_seconds
         self._providers: dict[str, Provider] = {}
         self._sems: dict[str, asyncio.Semaphore] = {}
@@ -151,6 +157,10 @@ class CallEngine:
                                 hit.get("model_version_returned"), hit.get("latency_s", 0.0), hit.get("raw", {}))
                 out[i] = (res, True, hit["call_id"], key)
                 self.stats["cache_hits"] += 1
+            elif self.only_models is not None and rq.model_key not in self.only_models:
+                out[i] = (LLMResult("", None, None, None, 0.0, error="cache-only: model bu çalıştırmada sunulmuyor"),
+                          False, None, key)
+                self.stats["cache_only_skipped"] += 1
             else:
                 by_model[rq.model_key].append(i)
 
@@ -168,7 +178,11 @@ class CallEngine:
             for i, res in zip(idx, results):
                 out[i] = (res, False, None, self.cache_key(reqs[i]))
 
-        await asyncio.gather(*(run_model(mk, idx) for mk, idx in by_model.items()))
+        if self.sequential_models:
+            for mk, idx in by_model.items():
+                await run_model(mk, idx)
+        else:
+            await asyncio.gather(*(run_model(mk, idx) for mk, idx in by_model.items()))
         return out
 
     # -- kayıt satırı -------------------------------------------------------------
@@ -194,6 +208,8 @@ class CallEngine:
             "model_key": req.model_key,
             "provider": spec.provider,
             "model_requested": spec.model,
+            "model_meta": {k: getattr(spec, k, None) for k in ("family", "open_weights", "model_revision",
+                                                                  "quantization", "served_by")},
             "model_version_returned": res.model_version_returned,
             "params": effective_params(spec),
             "prompt_sha256": sha256_text(prompt),
@@ -231,6 +247,9 @@ class CallEngine:
             results = await self._send([reqs[i] for i in pending])
             nxt = []
             for i, (res, hit, src, key) in zip(pending, results):
+                if res.error and res.error.startswith("cache-only"):
+                    outcomes[i].error = res.error
+                    continue
                 parsed, verr = (None, None)
                 if res.error is None:
                     parsed, verr = jobs[i].validate(res.text)
@@ -253,6 +272,6 @@ class CallEngine:
                         nxt.append(i)
             pending = nxt
         for o in outcomes:
-            if o.parsed is None:
+            if o.parsed is None and not (o.error or "").startswith("cache-only"):
                 self.stats["final_failures"] += 1
         return outcomes

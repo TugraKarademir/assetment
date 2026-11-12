@@ -29,16 +29,22 @@ class OpenAIProvider(Provider):
 
     def _body(self, req: LLMRequest) -> dict:
         p = self.spec.params
-        body = {
-            "model": self.spec.model,
-            "messages": [{"role": "system", "content": req.system}, *req.messages],
-            "max_tokens": p.get("max_tokens", 2000),
-            "response_format": {"type": "json_object"},
-        }
+        messages = [{"role": "system", "content": req.system}, *req.messages]
+        if p.get("system_in_user"):
+            # Sistem rolünü desteklemeyen sohbet şablonları için (ör. bazı Gemma sürümleri)
+            first = dict(req.messages[0])
+            first["content"] = f"{req.system}\n\n{first['content']}"
+            messages = [first, *req.messages[1:]]
+        body = {"model": self.spec.model, "messages": messages, "max_tokens": p.get("max_tokens", 2000)}
+        if p.get("json_mode", True):
+            body["response_format"] = {"type": "json_object"}
         if "temperature" in p:
             body["temperature"] = p["temperature"]
         if "seed" in p:
             body["seed"] = p["seed"]
+        if p.get("extra_body"):
+            # Sunucuya özgü alanlar; ör. vLLM/Qwen3: {"chat_template_kwargs": {"enable_thinking": false}}
+            body["extra_body"] = p["extra_body"]
         return body
 
     @staticmethod
