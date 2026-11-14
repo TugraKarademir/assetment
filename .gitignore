@@ -170,3 +170,7 @@ results/runs/
 *.key
 results/bias/*
 !results/bias/.gitkeep
+
+# Sunucu kurulumu
+vendor/
+modeller/

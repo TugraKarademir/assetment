@@ -39,30 +39,30 @@ içindeki `max_concurrency` değerlerini de aynı sayılara indirin. Bu da yetme
 
 ## 3. Kurulum (bir kez)
 
+Projeyi sunucuya kopyalayıp açın (zip), sonra tek komut:
+
 ```bash
-# 1) Projeyi sunucuya kopyalayın (zip ya da kendi depo yönteminiz), sonra:
-cd puanlama && uv sync --extra spelling --extra embeddings
-cp .env.example .env && uv run scoring gen-key >> .env      # MAPPING_KEY
-bash scripts/fetch_tr_dictionary.sh                          # Türkçe yazım sözlüğü
-
-# 2) llama.cpp: hazır Linux sürümü (https://github.com/ggml-org/llama.cpp/releases, "ubuntu-x64")
-#    ya da kaynaktan:
-git clone https://github.com/ggml-org/llama.cpp && cd llama.cpp
-cmake -B build -DGGML_NATIVE=ON -DLLAMA_CURL=OFF && cmake --build build -j --target llama-server
-export LLAMA_SERVER=$PWD/build/bin/llama-server && cd ..
-
-# 3) Modeller (indirilir ve SHA-256 ile doğrulanır; ~27 GB)
-export MODELS_DIR=/veri/modeller
-bash scripts/download_cpu_models.sh $MODELS_DIR qwen gemma llama aya
+cd puanlama
+bash scripts/cpu64/setup_server.sh /veri/modeller     # model klasörü; verilmezse ./modeller
 ```
 
-`.env` dosyasına (ya da kabuğa) şunları ekleyin. Adresler varsayılan olarak `scripts/cpu64/env.sh` içinden gelir:
+Betik sırasıyla şunları yapar ve yeniden çalıştırılabilir (biten adımlar atlanır):
 
-```
-MODELS_DIR=/veri/modeller
-LLAMA_SERVER=/yol/llama.cpp/build/bin/llama-server
-LOCAL_API_KEY=<rastgele bir anahtar>
-```
+1. Gerekli sistem araçlarını denetler (`curl`, `git`, `cmake`, `g++`). Eksikse kurulum komutunu yazıp durur; kök
+   yetkisi yalnızca o komut için gerekir.
+2. Donanımı raporlar: vCPU, fiziksel çekirdek, RAM, boş disk, AVX2.
+3. `uv` ile Python ortamını kurar.
+4. `.env` dosyasını oluşturur: eşleme şifreleme anahtarı, rastgele yerel API anahtarı, model klasörü.
+5. llama.cpp'yi kaynaktan, bu işlemciye özel derler (`vendor/llama.cpp`) ve commit'ini kaydeder.
+6. Dört modeli indirir (~27 GB) ve SHA-256 ile doğrular.
+7. Türkçe yazım sözlüğünü indirir.
+
+Sonunda RAM'e göre hangi betiğin kullanılacağını yazar: 48 GB ve üzeri için `run_study.sh`, daha azı için
+`run_lowram.sh`. Sunucunun internet erişimi gerekir: github.com, huggingface.co, pypi.org, astral.sh. Erişim
+kısıtlıysa modelleri başka bir makinede indirip klasöre kopyalayın; betik var olan dosyaları yalnızca doğrular.
+
+cpu64 betikleri ayarları (`MODELS_DIR`, `LLAMA_SERVER`, `LOCAL_API_KEY`) proje kökündeki `.env` dosyasından okur;
+kabukta tanımlı değerler önceliklidir.
 
 ## 4. Çalıştırma
 

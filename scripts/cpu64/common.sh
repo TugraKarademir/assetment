@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # Ortak ayarlar — 64 çekirdekli tek sanal sunucu (Linux). Gerekirse ortam değişkenleriyle geçersiz kılın.
 set -euo pipefail
+# Proje kökündeki .env okunur (MODELS_DIR, LLAMA_SERVER, LOCAL_API_KEY ...); kabukta tanımlı değerler önceliklidir.
+_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+if [ -f "$_ROOT/.env" ]; then
+  while IFS='=' read -r _k _v; do
+    case "$_k" in ''|\#*) continue ;; esac
+    if [ -z "${!_k:-}" ]; then export "$_k=$_v"; fi
+  done < "$_ROOT/.env"
+fi
 MODELS_DIR=${MODELS_DIR:-/veri/modeller}                 # GGUF dosyaları (scripts/download_cpu_models.sh)
 LLAMA_SERVER=${LLAMA_SERVER:-llama-server}               # llama.cpp ikilisi (PATH'te ya da tam yol)
 RUN_DIR=${RUN_DIR:-$HOME/.llama_runs}                    # PID ve günlük dosyaları
