@@ -1,0 +1,66 @@
+# BU BİLGİSAYAR — HAFİF PANEL (Ollama, yalnızca CPU; ~8 GB RAM ve ~8 GB disk yeterli)
+# Amaç: kendi bilgisayarınızda GERÇEK (ama küçük) dil modelleriyle arayüzü denemek. Araştırma puanlaması için
+# DEĞİLDİR (bunun için config/models.yaml, 64 çekirdekli sunucu).
+#
+# Kurulum (Windows/macOS/Linux):
+#   1) https://ollama.com adresinden Ollama'yı kurun ve açın.
+#   2) Bağlam uzunluğu (zorunlu; aksi halde uzun istemin başı kesilir):
+#        Windows:  setx OLLAMA_CONTEXT_LENGTH 8192   (sonra Ollama'yı kapatıp yeniden açın)
+#        macOS/Linux:  OLLAMA_CONTEXT_LENGTH=8192 ollama serve
+#   3) Modeller (~7 GB):  ollama pull qwen2.5:3b ; ollama pull gemma3:4b ; ollama pull llama3.2:3b
+#   4) Arayüzde bu paneli seçin; adres varsayılan olarak http://localhost:11434/v1 doldurulur.
+
+scorers: [qwen, gemma, llama]
+aggregator: gemma_agg
+
+models:
+  qwen:
+    provider: openai_compat
+    model: qwen2.5:3b
+    family: Alibaba Qwen
+    open_weights: true
+    quantization: GGUF Q4_K_M
+    served_by: Ollama (bu bilgisayar)
+    base_url_env: LOCAL_BASE_URL
+    timeout_s: 1800
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
+    max_concurrency: 1
+  gemma:
+    provider: openai_compat
+    model: gemma3:4b
+    family: Google Gemma
+    open_weights: true
+    quantization: GGUF Q4_K_M
+    served_by: Ollama (bu bilgisayar)
+    base_url_env: LOCAL_BASE_URL
+    timeout_s: 1800
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
+    max_concurrency: 1
+  llama:
+    provider: openai_compat
+    model: llama3.2:3b
+    family: Meta Llama
+    open_weights: true
+    quantization: GGUF Q4_K_M
+    served_by: Ollama (bu bilgisayar)
+    base_url_env: LOCAL_BASE_URL
+    timeout_s: 1800
+    params: {temperature: 0, seed: 20261112, max_tokens: 1000, json_schema: true}
+    max_concurrency: 1
+  gemma_agg:                     # deneme panelinde birleştirici olarak aynı küçük Gemma kullanılır
+    provider: openai_compat
+    model: gemma3:4b
+    family: Google Gemma
+    open_weights: true
+    quantization: GGUF Q4_K_M
+    served_by: Ollama (bu bilgisayar)
+    base_url_env: LOCAL_BASE_URL
+    timeout_s: 1800
+    params: {temperature: 0, seed: 7, max_tokens: 1000, json_schema: true}
+    max_concurrency: 1
+
+retry:
+  max_validation_retries: 2
+  max_api_retries: 3
+  backoff_initial_seconds: 2
+  backoff_max_seconds: 30

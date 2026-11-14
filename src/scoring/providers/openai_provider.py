@@ -62,10 +62,29 @@ class OpenAIProvider(Provider):
                          raw={"id": resp.get("id"), "finish_reason": choice.get("finish_reason"),
                               "system_fingerprint": resp.get("system_fingerprint")})
 
+    _schema_unsupported = False
+
     async def complete(self, req: LLMRequest) -> LLMResult:
+        import openai
         t0 = time.perf_counter()
+        body = self._body(req)
+        if self._schema_unsupported and body.get("response_format", {}).get("type") == "json_schema":
+            body["response_format"] = {"type": "json_object"}
         try:
-            resp = await self.client.chat.completions.create(**self._body(req))
+            resp = await self.client.chat.completions.create(**body)
+        except openai.BadRequestError as e:
+            # Eski sunucu sürümleri şema kısıtlamasını desteklemeyebilir: JSON kipine düş ve kaydet
+            if body.get("response_format", {}).get("type") != "json_schema":
+                raise
+            self._schema_unsupported = True
+            body["response_format"] = {"type": "json_object"}
+            try:
+                resp = await self.client.chat.completions.create(**body)
+            except _openai_errors() as e2:
+                raise RetryableError(f"{type(e2).__name__}: {e2}") from e2
+            r = self._parse(resp.model_dump(), time.perf_counter() - t0)
+            r.raw["json_schema_fallback"] = str(e)[:200]
+            return r
         except _openai_errors() as e:
             raise RetryableError(f"{type(e).__name__}: {e}") from e
         return self._parse(resp.model_dump(), time.perf_counter() - t0)

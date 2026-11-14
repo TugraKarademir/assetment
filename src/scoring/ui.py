@@ -25,6 +25,7 @@ st.set_page_config(page_title="Katmanlı puanlama", page_icon="📝", layout="wi
 
 PANEL_LABELS = {
     "models.mock.yaml": "Sahte modeller (kurulum gerektirmez; puanlar anlamlı değildir)",
+    "models.pc.light.yaml": "Bu bilgisayar — gerçek küçük modeller (Ollama gerekir)",
     "models.yaml": "Yerel modeller — 64 çekirdekli CPU sunucusu (varsayılan)",
     "models.cpu.3servers.yaml": "Yerel modeller — 3 CPU sunucusu",
     "models.cpu.single.yaml": "Yerel modeller — tek CPU sunucusu (Ollama)",
@@ -49,6 +50,36 @@ def _panel_info(path: str) -> dict:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
 
 
+KEY_ENVS = {"openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY", "google": "GOOGLE_API_KEY"}
+DEFAULT_URLS = {"LOCAL_BASE_URL": "http://localhost:11434/v1", "QWEN_URL": "http://127.0.0.1:8001/v1",
+                "GEMMA_URL": "http://127.0.0.1:8002/v1", "LLAMA_URL": "http://127.0.0.1:8003/v1",
+                "AYA_URL": "http://127.0.0.1:8004/v1", "VLLM_QWEN_URL": "http://127.0.0.1:8001/v1",
+                "VLLM_GEMMA_URL": "http://127.0.0.1:8002/v1", "VLLM_MISTRAL_URL": "http://127.0.0.1:8003/v1",
+                "VLLM_LLAMA_URL": "http://127.0.0.1:8004/v1"}
+
+
+def _needed_envs(info: dict) -> tuple[list[str], list[str]]:
+    """(sunucu adresi değişkenleri, API anahtarı değişkenleri) — paneldeki modellerin ihtiyaç duyduğu."""
+    urls, keys = [], []
+    for k in [*info["scorers"], info["aggregator"]]:
+        m = info["models"][k]
+        if m["provider"] == "openai_compat":
+            e = m.get("base_url_env") or "LOCAL_BASE_URL"
+            if e not in urls:
+                urls.append(e)
+        elif m["provider"] in KEY_ENVS and KEY_ENVS[m["provider"]] not in keys:
+            keys.append(KEY_ENVS[m["provider"]])
+    return urls, keys
+
+
+def _save_env(values: dict[str, str]) -> None:
+    p = Path(".env")
+    lines = p.read_text(encoding="utf-8").splitlines() if p.exists() else []
+    lines = [ln for ln in lines if ln.split("=", 1)[0] not in values]
+    lines += [f"{k}={v}" for k, v in values.items()]
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 # ----------------------------------------------------------------------------- kenar çubuğu
 with st.sidebar:
     st.header("Ayarlar")
@@ -63,6 +94,25 @@ with st.sidebar:
         st.warning("Sahte modeller gerçek dil modeli değildir. Yalnızca arayüzü ve akışı denemek içindir.")
     elif models_path.endswith("models.api.yaml"):
         st.error("Bu panel metni kurum dışındaki API'lere gönderir. Gerçek öğrenci verisiyle kullanmayın.")
+    # Seçilen panelin ihtiyaç duyduğu sunucu adresleri / anahtarlar
+    url_envs, key_envs = _needed_envs(info)
+    missing_keys = [e for e in key_envs if not os.environ.get(e)]
+    if url_envs:
+        st.markdown("**Model sunucusu adresi**")
+        new_vals = {}
+        for e in url_envs:
+            val = st.text_input(e, value=os.environ.get(e) or DEFAULT_URLS.get(e, "http://localhost:11434/v1"),
+                                key=f"url_{e}")
+            os.environ[e] = val.strip()
+            new_vals[e] = val.strip()
+        if st.button("Adresleri .env dosyasına kaydet"):
+            _save_env(new_vals)
+            st.success("Kaydedildi.")
+        st.caption("Sunucu açık değilse puanlama bağlantı hatası verir. Önce 'Modeller' sekmesinden sınayın.")
+    if missing_keys:
+        st.error("Bu panel için API anahtarı tanımlı değil: " + ", ".join(missing_keys) +
+                 ". Anahtarları .env dosyasına ekleyin ya da 'Sahte modeller' panelini seçin.")
+    ready = not missing_keys
     exp = load_experiment()
     st.caption(f"Gerekçe kipi: {exp.prompt_options.get('rationale_style', 'standard')}")
     st.divider()
@@ -90,7 +140,10 @@ with tab_try:
         if not is_mock:
             st.caption("Gerçek modellerde tüm model sunucuları açık olmalıdır (bkz. Modeller sekmesi). "
                        "CPU'da tek yanıt birkaç dakika sürebilir.")
-        go = st.button("Puanla", type="primary", disabled=not text.strip())
+        if not is_mock:
+            st.info("Bu panel gerçek model sunucusu ister. Bilgisayarınızda kurulum yapmadan denemek için kenar "
+                    "çubuğundan **Sahte modeller** panelini seçin.")
+        go = st.button("Puanla", type="primary", disabled=not text.strip() or not ready)
     with right:
         with st.expander("Rubrik", expanded=False):
             for c in item.criteria:
@@ -108,6 +161,8 @@ with tab_try:
             except Exception as e:  # sunucu kapalı, yapılandırma hatası vb.
                 st.session_state.pop("trial", None)
                 st.error(f"Puanlama başarısız: {type(e).__name__}: {e}")
+                st.info("Model sunucusu çalışmıyor olabilir. 'Modeller' sekmesinde 'Bağlantıyı sına' ile kontrol "
+                        "edin ya da kenar çubuğundan 'Sahte modeller' panelini seçin.")
 
     res = st.session_state.get("trial")
     if res is not None and res.item_id == item_id:

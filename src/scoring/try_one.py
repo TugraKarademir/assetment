@@ -55,7 +55,14 @@ def score_single(item_id: str, text: str, models_path: str | Path = "config/mode
                     "models": models.model_dump(mode="json")}, copy_to_results=False)
     rows, notes = asyncio.run(run_pipeline(responses, bank, models, exp, CONDITION_PLANS["full"], 1, run_id,
                                            "ui_trial", use_batch=False, max_layer=max_layer))
-    errors = sorted({f"{r.model_key} (K{int(r.layer)}): {r.error}" for r in rows[rows.score.isna()].itertuples()})
+    def _friendly(err: str) -> str:
+        if any(t in err for t in ("APIConnectionError", "Connection error", "ConnectError", "ConnectionRefused")):
+            return "model sunucusuna bağlanılamadı (sunucu açık mı, adres doğru mu?)"
+        if "NotFoundError" in err or "not found" in err.lower():
+            return "model sunucuda bulunamadı (model indirildi mi? ör. ollama pull ...)"
+        return err[:300]
+    errors = sorted({f"{r.model_key} (K{int(r.layer)}): {_friendly(str(r.error))}"
+                     for r in rows[rows.score.isna()].itertuples()})
     ok = rows[rows.score.notna()].copy()
     ok["score"] = ok.score.astype(int)
 

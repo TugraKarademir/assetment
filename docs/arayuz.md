@@ -20,8 +20,22 @@ yeterlidir.
 Kapatmak için açılan siyah pencereyi kapatın. Komut satırından aynı işler: `uv run scoring demo` (sentetik
 deneme) ve `uv run scoring ui --open` (arayüz).
 
-> Sahte modeller gerçek dil modeli değildir; puanlar yalnızca akışı ve ekranları göstermek içindir. Gerçek
-> modellerle deneme 64 çekirdekli sunucuda yapılır (aşağıda).
+> Sahte modeller gerçek dil modeli değildir; puanlar yalnızca akışı ve ekranları göstermek içindir.
+
+**"LOCAL_BASE_URL tanımlı değil" ya da "sunucuya bağlanılamadı" hatası** alırsanız, kenar çubuğunda gerçek model
+isteyen bir panel seçilmiştir. Kurulum yapmadan denemek için **Sahte modeller** panelini seçin.
+
+### İsteğe bağlı: bilgisayarınızda gerçek (küçük) modellerle
+
+1. https://ollama.com adresinden Ollama'yı kurun.
+2. Bağlam uzunluğunu ayarlayın. Bu ayar zorunludur; yapılmazsa rubrik kesilir.
+   - Windows'ta komut isteminde: `setx OLLAMA_CONTEXT_LENGTH 8192`. Ardından Ollama'yı kapatıp yeniden açın.
+3. Modelleri indirin (~7 GB): `ollama pull qwen2.5:3b`, `ollama pull gemma3:4b`, `ollama pull llama3.2:3b`.
+4. Arayüzde **Bu bilgisayar — gerçek küçük modeller** panelini seçin. Adres `http://localhost:11434/v1` olarak
+   dolu gelir. **Modeller** sekmesinde **Bağlantıyı sına** ile kontrol edip **Yanıt dene**'ye geçin.
+
+Bu küçük modeller (3–4B) yalnızca denemek içindir; araştırma puanlaması 64 çekirdekli sunucudaki büyük modellerle
+yapılır. Bilgisayarınızda tek bir yanıtın puanlanması birkaç dakika sürebilir.
 
 ## Sunucuda
 
