@@ -27,7 +27,7 @@ def _git(*args: str) -> str | None:
 
 
 def write_manifest(run_id: str, logs_dir: str | Path, results_dir: str | Path, config_files: list[str | Path],
-                   seeds: dict, extra: dict) -> dict:
+                   seeds: dict, extra: dict, copy_to_results: bool = True) -> dict:
     files = [Path(p) for p in config_files] + sorted(Path("prompts").glob("*.j2"))
     versions = {}
     for p in PACKAGES:
@@ -50,7 +50,8 @@ def write_manifest(run_id: str, logs_dir: str | Path, results_dir: str | Path, c
         "argv": sys.argv,
         **extra,
     }
-    for d in (Path(logs_dir) / run_id, Path(results_dir) / "manifests"):
+    targets = [Path(logs_dir) / run_id] + ([Path(results_dir) / "manifests"] if copy_to_results else [])
+    for d in targets:
         name = "run_manifest.json" if d.name == run_id else f"{run_id}.json"
         ensure_parent(d / name).write_text(json.dumps(m, ensure_ascii=False, indent=2), encoding="utf-8")
     return m

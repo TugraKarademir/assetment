@@ -240,6 +240,25 @@ def benchmark(models: Path = ModelsOpt,
     typer.echo(f"Not: K2/K3 istemleri K1'den ~%30 uzundur; tahmin K1 hızına dayanır. Kayıt: logs/{run_id}/")
 
 
+@app.command()
+def ui(port: int = typer.Option(8501, help="Arayüz portu"),
+       host: str = typer.Option("127.0.0.1", help="Yalnızca yerel erişim için 127.0.0.1 bırakın")):
+    """Tarayıcı arayüzünü başlatır: yanıt deneme, sonuç tabloları, model testi, sentetik deneme."""
+    import subprocess
+    import sys
+    try:
+        import streamlit  # noqa: F401
+    except ImportError:
+        typer.echo("Arayüz için: uv sync --extra ui  (diğer ekstralarla birlikte: --extra spelling --extra embeddings)", err=True)
+        raise typer.Exit(1)
+    app_path = Path(__file__).with_name("ui.py")
+    typer.echo(f"Arayüz: http://{host}:{port}   (uzak sunucuda: ssh -N -L {port}:127.0.0.1:{port} kullanici@sunucu)")
+    raise typer.Exit(subprocess.call([sys.executable, "-m", "streamlit", "run", str(app_path),
+                                      "--server.address", host, "--server.port", str(port),
+                                      "--server.headless", "true", "--browser.gatherUsageStats", "false",
+                                      "--client.toolbarMode", "minimal"]))
+
+
 def _gold_context():
     from .data import gold_consensus, load_human_scores, load_responses
     exp, bank = load_experiment(), load_items()

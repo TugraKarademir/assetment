@@ -16,6 +16,7 @@ import hashlib
 import json
 import math
 import random
+import re
 import time
 
 from ..utils import normalize_for_hash
@@ -43,6 +44,13 @@ class MockProvider(Provider):
     async def complete(self, req: LLMRequest) -> LLMResult:
         t0 = time.perf_counter()
         await asyncio.sleep(0)
+        if "mock" not in req.metadata:
+            # Bağlantı/bağlam sınaması (check-models): istemdeki kodu geri döndür
+            prompt = req.prompt_text()
+            m = re.search(r"GİZLİ KOD: ([A-ZÇĞİÖŞÜ]+-\d+)", prompt)
+            text = json.dumps({"ok": True, **({"kod": m.group(1)} if m else {})}, ensure_ascii=False)
+            n = int(len(prompt) / 3.5)
+            return LLMResult(text, n, int(len(text) / 3.5), self.spec.model, time.perf_counter() - t0, {"mock": True})
         ctx = req.metadata["mock"]
         attempt = req.metadata.get("attempt", 0)
         rep = req.metadata.get("replicate", 1)

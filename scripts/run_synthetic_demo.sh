@@ -3,7 +3,7 @@
 # Gerçek modellerle çalıştırmak için --models config/models.yaml kullanın ve .env'i doldurun.
 set -euo pipefail
 MODELS=${MODELS:-config/models.mock.yaml}
-EMB_FLAG=${EMB_FLAG:---offline-embedding-demo}   # HuggingFace erişimi varsa: EMB_FLAG="" ile gerçek gömme modelleri
+EMB_FLAG=${EMB_FLAG---offline-embedding-demo}   # HuggingFace erişimi varsa: EMB_FLAG="" ile gerçek gömme modelleri
 
 if ! grep -q '^MAPPING_KEY=.\+' .env 2>/dev/null; then
   echo "MAPPING_KEY üretiliyor (.env)"; uv run scoring gen-key 2>/dev/null >> .env

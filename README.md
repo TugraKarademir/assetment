@@ -71,6 +71,15 @@ CPU'da süreyi çıktı uzunluğu belirlediğinden gerekçeler varsayılan olara
 - üç ayrı CPU sunucusu: `config/models.cpu.3servers.yaml` ve [docs/cpu_sunucu_kurulumu.md](docs/cpu_sunucu_kurulumu.md);
 - GPU: `config/models.gpu.*.yaml` ve [docs/yerel_gpu_kurulumu.md](docs/yerel_gpu_kurulumu.md).
 
+## Arayüz
+
+```bash
+uv run scoring ui      # http://127.0.0.1:8501  — tek yanıt deneme, sonuç tabloları, model testi, sentetik deneme
+```
+
+Bir yanıtı yapıştırıp her modelin puanını ve gerekçesini görebilir, değerlendirme tablolarına ve grafiklere
+göz atabilirsiniz. Ayrıntı: [docs/arayuz.md](docs/arayuz.md).
+
 ## Hızlı deneme (sentetik veri + mock modeller, anahtar gerekmez)
 
 ```bash
@@ -111,6 +120,7 @@ uv run scoring --help
 | `anonymize [--export dosya.xlsx]` | Moodle CSV/XLSX okur, kimlikleri koda çevirir, metin içi kişisel veriyi maskeler |
 | `sample-gold [--per-item 300] [--synthetic]` | Katmanlı seçkisiz altın set, öğrenci düzeyinde 5 kat, puanlayıcı Excel'i, Label Studio JSON'u |
 | `check-leakage` | Çapaların altın setten gelmediğini denetler (ihlalde çıkış kodu 1) |
+| `ui` | Tarayıcı arayüzü (`--extra ui` gerekir) |
 | `check-models` | Her modelin uç noktasını sınar: bağlantı, JSON çıktısı, bağlam kesilmesi |
 | `benchmark [--n 2]` | Her sunucuda gerçek istemlerle hız ölçer, tüm çalışmanın süresini tahmin eder (`results/benchmark/`) |
 | `estimate-cost --condition ablation` | İstemleri gerçekten oluşturup token ve maliyet tahmini yapar |

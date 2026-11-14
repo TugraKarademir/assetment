@@ -34,7 +34,7 @@ if ! command -v uv >/dev/null; then
   export PATH="$HOME/.local/bin:$PATH"
 fi
 uv --version
-uv sync --extra spelling --extra embeddings
+uv sync --extra spelling --extra embeddings --extra ui
 
 say "4/7 .env"
 [ -f .env ] || cp .env.example .env
@@ -77,4 +77,5 @@ Sıradaki adımlar:
   2) Hız ölçümü:          bash scripts/cpu64/benchmark.sh
   3) Pilot:               LIMIT=5 bash scripts/cpu64/$RUN
   4) Tam çalışma:         tmux new -s puanlama 'bash scripts/cpu64/$RUN 2>&1 | tee -a logs/run.log'
+  Arayüz (tek yanıt deneme, sonuçlar):  uv run scoring ui   ->  docs/arayuz.md
 MSG

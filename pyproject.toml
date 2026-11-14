@@ -27,6 +27,7 @@ dependencies = [
 [project.optional-dependencies]
 embeddings = ["sentence-transformers>=3.0"]
 spelling = ["spylls>=0.1.7"]
+ui = ["streamlit>=1.36"]
 
 [dependency-groups]
 dev = ["pytest>=8.0"]
