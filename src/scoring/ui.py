@@ -199,16 +199,14 @@ with tab_demo:
                  "kapatıldı.")
     confirm = st.checkbox("Mevcut işlenmiş verinin ve sonuçların değişeceğini anladım", disabled=real)
     if st.button("Sentetik denemeyi çalıştır", disabled=real or not confirm):
-        env = dict(os.environ, MODELS="config/models.mock.yaml")
-        if not Path("data/derived/embedding_cache").exists():
-            env["EMB_FLAG"] = "--offline-embedding-demo"
-        else:
-            env["EMB_FLAG"] = ""
+        args = [sys.executable, "-m", "scoring.cli", "demo"]
+        if Path("data/derived/embedding_cache").exists():
+            args.append("--real-embeddings")
         with st.status("Çalışıyor…", expanded=True) as status:
             box = st.empty()
             lines: list[str] = []
-            proc = subprocess.Popen(["bash", "scripts/run_synthetic_demo.sh"], stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT, text=True, env=env)
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                    encoding="utf-8", errors="replace", env=dict(os.environ, PYTHONUTF8="1"))
             for ln in proc.stdout:
                 if ln.strip() and not ln.startswith("|") and "it/s]" not in ln:
                     lines.append(ln.rstrip())

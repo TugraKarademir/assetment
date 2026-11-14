@@ -8,6 +8,12 @@ Bu araçta tekrar üretilebilirlik, kayıt tutma ve veri gizliliği, hızdan ve 
 > **Durum:** Etik kurul onayı gelene kadar yalnızca **sentetik veri** ile çalışılır. Depodaki sorular, rubrik,
 > çapalar ve tüm `results/` çıktıları sentetiktir; mock (sahte) modellerle üretilmiştir ve **bilimsel bir bulgu değildir**.
 
+## Hemen deneyin (kendi bilgisayarınızda)
+
+Zip'i çıkarın. **Windows**'ta `ARAYUZU_AC_Windows.bat` dosyasına çift tıklayın; **macOS/Linux**'ta
+`bash arayuzu_ac.sh` komutunu çalıştırın. Kurulum kendiliğinden yapılır ve arayüz tarayıcıda açılır. Sahte modellerle
+tek yanıt deneyebilir ve sentetik verilerle tüm akışı çalıştırabilirsiniz. Ayrıntı: [docs/arayuz.md](docs/arayuz.md).
+
 ## Kuramsal dayanak
 
 Mimari, Wang ve ark.'nın (2025) *Mixture-of-Agents* yaklaşımından uyarlanmıştır: birden çok model önce bağımsız
@@ -83,10 +89,10 @@ göz atabilirsiniz. Ayrıntı: [docs/arayuz.md](docs/arayuz.md).
 ## Hızlı deneme (sentetik veri + mock modeller, anahtar gerekmez)
 
 ```bash
-bash scripts/run_synthetic_demo.sh
+uv run scoring demo        # ya da (Linux/macOS): bash scripts/run_synthetic_demo.sh
 ```
 
-Bu betik şu adımları sırayla çalıştırır: sentetik Moodle dışa aktarımı → anonimleştirme → (sentetik) resmî not →
+Bu komut şu adımları sırayla çalıştırır: sentetik Moodle dışa aktarımı → anonimleştirme → (sentetik) resmî not →
 altın set → (sentetik) iki kör puanlayıcı + hakem → sızıntı denetimi → 8 ablasyon koşulu → kararlılık →
 değerlendirme → yanlılık verisi → R modeli.
 
@@ -120,7 +126,8 @@ uv run scoring --help
 | `anonymize [--export dosya.xlsx]` | Moodle CSV/XLSX okur, kimlikleri koda çevirir, metin içi kişisel veriyi maskeler |
 | `sample-gold [--per-item 300] [--synthetic]` | Katmanlı seçkisiz altın set, öğrenci düzeyinde 5 kat, puanlayıcı Excel'i, Label Studio JSON'u |
 | `check-leakage` | Çapaların altın setten gelmediğini denetler (ihlalde çıkış kodu 1) |
-| `ui` | Tarayıcı arayüzü (`--extra ui` gerekir) |
+| `ui [--open]` | Tarayıcı arayüzü (`--extra ui` gerekir) |
+| `demo` | Sentetik veriyle uçtan uca deneme (her işletim sisteminde) |
 | `check-models` | Her modelin uç noktasını sınar: bağlantı, JSON çıktısı, bağlam kesilmesi |
 | `benchmark [--n 2]` | Her sunucuda gerçek istemlerle hız ölçer, tüm çalışmanın süresini tahmin eder (`results/benchmark/`) |
 | `estimate-cost --condition ablation` | İstemleri gerçekten oluşturup token ve maliyet tahmini yapar |

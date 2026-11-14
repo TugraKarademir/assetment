@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -241,8 +242,68 @@ def benchmark(models: Path = ModelsOpt,
 
 
 @app.command()
+def demo(n_students: int = typer.Option(50, help="Sentetik öğrenci sayısı"),
+         models: Path = typer.Option("config/models.mock.yaml", "--models", help="Model paneli (varsayılan: sahte)"),
+         real_embeddings: bool = typer.Option(False, help="Gerçek gömme modelleri (Hugging Face; ~10 GB indirir)")):
+    """Sentetik veriyle UÇTAN UCA deneme (Windows/macOS/Linux). Mevcut işlenmiş veriyi ve sonuçları değiştirir."""
+    import subprocess
+    import sys
+    raw, truth = Path("data/raw/moodle_export.csv"), Path("data/synthetic/latent_truth.csv")
+    if raw.exists() and not truth.exists():
+        typer.echo("data/raw/moodle_export.csv sentetik görünmüyor; gerçek verinin üzerine yazmamak için durdu.", err=True)
+        raise typer.Exit(1)
+    env_path = Path(".env")
+    if "MAPPING_KEY=" not in (env_path.read_text(encoding="utf-8") if env_path.exists() else "") or \
+            not os.environ.get("MAPPING_KEY"):
+        from .anonymize import generate_key
+        key = os.environ.get("MAPPING_KEY") or generate_key()
+        text = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+        text = "\n".join(ln for ln in text.splitlines() if not ln.startswith("MAPPING_KEY="))
+        env_path.write_text((text + "\n" if text else "") + f"MAPPING_KEY={key}\n", encoding="utf-8")
+        os.environ["MAPPING_KEY"] = key
+    _fetch_dictionary()
+
+    def step(title: str, args: list[str]):
+        typer.echo(f"\n== {title} ==")
+        code = subprocess.call(args)
+        if code != 0:
+            typer.echo(f"Adım başarısız: {title} (çıkış {code})", err=True)
+            raise typer.Exit(code)
+
+    py, cli = sys.executable, [sys.executable, "-m", "scoring.cli"]
+    step("1/9 Sentetik sınav dışa aktarımı", [py, "scripts/make_synthetic.py", "--n-students", str(n_students)])
+    step("2/9 Anonimleştirme ve maskeleme", [*cli, "anonymize"])
+    step("3/9 Sentetik resmî not", [py, "scripts/simulate_human_scores.py", "--stage", "official"])
+    step("4/9 Altın set ve katlar", [*cli, "sample-gold", "--synthetic"])
+    step("5/9 Sentetik iki puanlayıcı + hakem", [py, "scripts/simulate_human_scores.py", "--stage", "gold"])
+    step("6/9 Ablasyon koşulları", [*cli, "run-ablation", "--models", str(models), "-y", "--no-evaluate",
+                                    *([] if real_embeddings else ["--offline-embedding-demo"])])
+    step("7/9 Kararlılık (2. puanlama)", [*cli, "score", "--condition", "stability", "--replicate", "2",
+                                          "--models", str(models), "-y"])
+    step("8/9 Değerlendirme", [*cli, "evaluate"])
+    step("9/9 Yanlılık verisi", [*cli, "export-bias-data"])
+    typer.echo("\nBitti. Sonuçlar: results/   Arayüz: uv run scoring ui --open")
+
+
+def _fetch_dictionary() -> None:
+    """Türkçe Hunspell sözlüğü (yazım hatası sayımı için); indirilemezse sayım NA olur."""
+    import urllib.request
+    dest = Path("data/resources/hunspell_tr")
+    if (dest / "index.dic").exists():
+        return
+    dest.mkdir(parents=True, exist_ok=True)
+    base = "https://raw.githubusercontent.com/wooorm/dictionaries/main/dictionaries/tr/"
+    try:
+        for f in ("index.aff", "index.dic", "license"):
+            urllib.request.urlretrieve(base + f, dest / f)
+    except Exception as e:  # ağ yoksa deneme yine çalışır
+        typer.echo(f"Sözlük indirilemedi ({type(e).__name__}); yazım hatası sayımı NA olacak.", err=True)
+
+
+@app.command()
 def ui(port: int = typer.Option(8501, help="Arayüz portu"),
-       host: str = typer.Option("127.0.0.1", help="Yalnızca yerel erişim için 127.0.0.1 bırakın")):
+       host: str = typer.Option("127.0.0.1", help="Yalnızca yerel erişim için 127.0.0.1 bırakın"),
+       open_browser: bool = typer.Option(False, "--open", help="Tarayıcıyı otomatik aç (masaüstü bilgisayar)")):
     """Tarayıcı arayüzünü başlatır: yanıt deneme, sonuç tabloları, model testi, sentetik deneme."""
     import subprocess
     import sys
@@ -255,7 +316,8 @@ def ui(port: int = typer.Option(8501, help="Arayüz portu"),
     typer.echo(f"Arayüz: http://{host}:{port}   (uzak sunucuda: ssh -N -L {port}:127.0.0.1:{port} kullanici@sunucu)")
     raise typer.Exit(subprocess.call([sys.executable, "-m", "streamlit", "run", str(app_path),
                                       "--server.address", host, "--server.port", str(port),
-                                      "--server.headless", "true", "--browser.gatherUsageStats", "false",
+                                      "--server.headless", "false" if open_browser else "true",
+                                      "--browser.gatherUsageStats", "false",
                                       "--client.toolbarMode", "minimal"]))
 
 
