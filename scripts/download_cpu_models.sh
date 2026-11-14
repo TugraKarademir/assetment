@@ -8,5 +8,7 @@ mkdir -p "$DEST"
 tail -n +2 "$(dirname "$0")/cpu_models.tsv" | while IFS=$'\t' read -r key repo file sha tag; do
   [[ " $KEYS " == *" $key "* ]] || continue
   [ -f "$DEST/$file" ] || curl -L --fail -o "$DEST/$file" "https://huggingface.co/$repo/resolve/main/$file"
-  echo "$sha  $DEST/$file" | sha256sum -c -
+  if ! echo "$sha  $DEST/$file" | sha256sum -c -; then
+    echo "HATA: $file bozuk ya da eksik inmiş. Dosyayı silip betiği yeniden çalıştırın: $DEST/$file"; exit 1
+  fi
 done

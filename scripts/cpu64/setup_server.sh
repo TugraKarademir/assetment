@@ -38,7 +38,7 @@ uv sync --extra spelling --extra embeddings
 
 say "4/7 .env"
 [ -f .env ] || cp .env.example .env
-grep -q '^MAPPING_KEY=.\+' .env || uv run scoring gen-key 2>/dev/null >> .env
+grep -q '^MAPPING_KEY=.\+' .env || { sed -i '/^MAPPING_KEY=$/d' .env; uv run scoring gen-key 2>/dev/null >> .env; }
 grep -q '^LOCAL_API_KEY=.\+' .env || { sed -i '/^LOCAL_API_KEY=/d' .env; echo "LOCAL_API_KEY=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')" >> .env; }
 grep -q '^MODELS_DIR=' .env || echo "MODELS_DIR=$MODELS_DIR" >> .env
 chmod 600 .env
