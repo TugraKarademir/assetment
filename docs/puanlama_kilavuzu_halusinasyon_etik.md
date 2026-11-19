@@ -17,12 +17,13 @@ hazırlanmıştır. Aynı rubrik ve örnek (çapa) yanıtlar modellere de verili
 > adınızı ya da numaranızı yazmayınız.
 
 **Soru 1 — Halüsinasyon**
-> Büyük dil modellerinde (ör. ChatGPT) "halüsinasyon" nedir ve neden ortaya çıkar? Bir örnekle açıklayınız.
+> Büyük dil modellerinde "halüsinasyon" nedir ve neden ortaya çıkar? Bir örnekle açıklayınız.
 
 **Soru 2 — Etik**
-> Bir şirket, iş başvurularını son on yılda işe aldığı çalışanların verileriyle eğitilmiş bir yapay zekâ ile
-> değerlendiriyor ve düşük puan alan adayları hiçbir insan incelemesi olmadan eliyor. Bu uygulamadaki etik
-> sorunları açıklayınız ve şirkete gerekçeli bir öneride bulununuz.
+> Bir şirket, geçmiş çalışan verileriyle eğitilmiş bir yapay zekâyla iş başvurularını puanlıyor ve düşük puanlı
+> adayları insan incelemesi olmadan eliyor. Etik sorunları açıklayıp şirkete gerekçeli bir öneride bulununuz.
+
+Gizli işaret (kanarya) eklenecekse Moodle'a yapıştırılacak HTML için: `docs/gizli_isaret_kontrolu.md`.
 
 **Moodle ayarları**
 - Her soru ayrı bir **Kompozisyon (Essay)** sorusu olarak eklenir.
@@ -119,7 +120,7 @@ hazırlanmıştır. Aynı rubrik ve örnek (çapa) yanıtlar modellere de verili
 ## 4. Soru 2 — Etik
 
 ### Örnek tam puanlık yanıt (8/8)
-> En önemli sorun yanlılıktır. Sistem son on yılın işe alım verisiyle eğitildiği için geçmişte hangi gruplar
+> En önemli sorun yanlılıktır. Sistem geçmiş işe alım verisiyle eğitildiği için geçmişte hangi gruplar
 > daha çok işe alındıysa onları "iyi aday" olarak öğrenir ve benzemeyenleri düşük puanlar. Cinsiyet doğrudan
 > kullanılmasa bile okul ya da adres gibi vekil bilgiler üzerinden ayrımcılık sürebilir; eski eşitsizlik
 > otomatikleşir. İkinci sorun, kararların insan denetimi olmadan verilmesi ve açıklanamamasıdır: aday neden

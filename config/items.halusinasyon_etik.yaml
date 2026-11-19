@@ -21,7 +21,7 @@ items:
     bloom: alt
     bloom_level: anlama
     question: >-
-      Büyük dil modellerinde (ör. ChatGPT) "halüsinasyon" nedir ve neden ortaya çıkar? Bir örnekle açıklayınız.
+      Büyük dil modellerinde "halüsinasyon" nedir ve neden ortaya çıkar? Bir örnekle açıklayınız.
     reference_answer: >-
       Halüsinasyon, bir dil modelinin gerçeğe aykırı ya da tamamen uydurma bir bilgiyi akıcı ve kendinden emin bir
       dille, sanki doğruymuş gibi üretmesidir. Model bunu bilerek yapmaz; ancak cevap ikna edici olduğu için hata
@@ -119,11 +119,11 @@ items:
     bloom: üst
     bloom_level: değerlendirme
     question: >-
-      Bir şirket, iş başvurularını son on yılda işe aldığı çalışanların verileriyle eğitilmiş bir yapay zekâ ile
-      değerlendiriyor ve düşük puan alan adayları hiçbir insan incelemesi olmadan eliyor. Bu uygulamadaki etik
-      sorunları açıklayınız ve şirkete gerekçeli bir öneride bulununuz.
+      Bir şirket, geçmiş çalışan verileriyle eğitilmiş bir yapay zekâyla iş başvurularını puanlıyor ve düşük
+      puanlı adayları insan incelemesi olmadan eliyor. Etik sorunları açıklayıp şirkete gerekçeli bir öneride
+      bulununuz.
     reference_answer: >-
-      En önemli sorun yanlılıktır. Sistem son on yılın işe alım verisiyle eğitildiği için geçmişte hangi gruplar
+      En önemli sorun yanlılıktır. Sistem geçmiş işe alım verisiyle eğitildiği için geçmişte hangi gruplar
       daha çok işe alındıysa onları "iyi aday" olarak öğrenir ve benzemeyenleri düşük puanlar. Cinsiyet doğrudan
       kullanılmasa bile okul ya da adres gibi vekil bilgiler üzerinden ayrımcılık sürebilir; eski eşitsizlik
       otomatikleşir. İkinci sorun, kararların insan denetimi olmadan verilmesi ve açıklanamamasıdır: aday neden
@@ -195,7 +195,7 @@ items:
         source_response_id: null
         scores: {C1: 4, C2: 4}
         text: >-
-          Sistem son on yılın verisinden "iyi aday" profilini öğrendiği için geçmişte hangi gruplar daha çok işe
+          Sistem geçmiş işe alım verisinden "iyi aday" profilini öğrendiği için geçmişte hangi gruplar daha çok işe
           alındıysa onları kayırır; cinsiyet kullanılmasa bile okul ya da adres gibi bilgiler üzerinden ayrımcılık
           sürer, yani eski eşitsizlik otomatikleşir. Ayrıca kararı hiçbir insan denetlemediği için aday neden
           elendiğini öğrenemez, itiraz edemez ve hatada sorumlu belirsizdir. Önerim: sistem yalnızca İK uzmanına
