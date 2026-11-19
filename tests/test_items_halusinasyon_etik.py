@@ -16,10 +16,11 @@ def real_bank():
 def test_structure(real_bank):
     assert real_bank.ids == ["S1", "S2"]
     for it in real_bank.items:
-        assert [c.criterion_id for c in it.criteria] == ["C1", "C2", "C3"]
-        assert it.total_min == 0 and it.total_max == 12
-        assert all(f"({x})" in it.question for x in "abc")       # her alt madde bir ölçüte karşılık gelir
-        assert it.reference_answer and len(it.reference_answer.split()) > 150
+        assert [c.criterion_id for c in it.criteria] == ["C1", "C2"]
+        assert it.total_min == 0 and it.total_max == 8
+        assert "(a)" not in it.question and len(it.question.split()) < 60   # kısa, alt maddesiz (çevrim içi)
+        ref = len(it.reference_answer.split())
+        assert 80 <= ref <= 160                                            # beklenen yanıt uzunluğuyla uyumlu
     assert real_bank["S1"].bloom == "alt" and real_bank["S2"].bloom == "üst"
 
 
@@ -38,7 +39,7 @@ def test_prompt_and_schema_render(real_bank):
         system, user = r.render("layer1_score.j2", item=it, anchors=it.anchors, response_id="R1", response_text="x")
         assert it.question[:40] in user and "Çapa 7" in user
         sch = json_schema_for(it, "R1")
-        assert sch["properties"]["total"]["maximum"] == 12
+        assert sch["properties"]["total"]["maximum"] == 8
 
 
 def test_experiment_points_to_real_items(monkeypatch):
@@ -52,4 +53,4 @@ def test_single_response_with_real_items(monkeypatch):
     res = score_single("S2", "Sistem geçmiş veriden öğrendiği için kadın adaylara karşı yanlı olabilir.",
                        "config/models.mock.yaml")
     assert set(res.rows.layer.astype(int)) == {1, 2, 3}
-    assert res.summary.iloc[-1]["Aralık"] == "0–12"
+    assert res.summary.iloc[-1]["Aralık"] == "0–8"
