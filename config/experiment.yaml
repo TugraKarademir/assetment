@@ -1,4 +1,9 @@
 # Deney ayarları. Bu dosyanın SHA-256 özeti her run_manifest.json içine yazılır.
+# Kullanılan soru ve rubrik dosyası. Gerçek çalışma: halüsinasyon ve etik soruları.
+# Sentetik deneme (`scoring demo`) her zaman config/items.yaml dosyasındaki 4 sentetik soruyu kullanır.
+# Ortam değişkeniyle geçersiz kılınabilir: SCORING_ITEMS=config/items.yaml
+items_file: config/items.halusinasyon_etik.yaml
+
 seeds:
   global: 20261112
   gold_sampling: 4242

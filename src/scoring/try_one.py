@@ -13,7 +13,7 @@ from pathlib import Path
 import pandas as pd
 
 from .anonymize import PIIMasker, _read_list
-from .config import load_experiment, load_items, load_models
+from .config import items_path, load_experiment, load_items, load_models
 from .manifest import new_run_id, write_manifest
 from .pipeline import CONDITION_PLANS, run_pipeline
 from .utils import round_score, sha256_text
@@ -50,7 +50,7 @@ def score_single(item_id: str, text: str, models_path: str | Path = "config/mode
                                "is_empty": False}])
     run_id = new_run_id("ui")
     write_manifest(run_id, exp.path("logs_dir"), exp.path("results_dir"),
-                   ["config/items.yaml", str(models_path), "config/experiment.yaml"], exp.seeds,
+                   [str(items_path()), str(models_path), "config/experiment.yaml"], exp.seeds,
                    {"condition": "ui_trial", "item_id": item_id, "response_id": rid,
                     "models": models.model_dump(mode="json")}, copy_to_results=False)
     rows, notes = asyncio.run(run_pipeline(responses, bank, models, exp, CONDITION_PLANS["full"], 1, run_id,

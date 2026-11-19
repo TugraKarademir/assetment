@@ -6,6 +6,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 os.chdir(ROOT)  # yapılandırma göreli yollarla okunur
+os.environ["SCORING_ITEMS"] = "config/items.yaml"  # birim testleri sentetik 4 soruluk rubrikle çalışır
 sys.path.insert(0, str(ROOT / "scripts"))
 
 

@@ -10,7 +10,7 @@ import pandas as pd
 import typer
 from dotenv import load_dotenv
 
-from .config import load_experiment, load_items, load_models
+from .config import items_path, load_experiment, load_items, load_models
 
 load_dotenv()
 app = typer.Typer(add_completion=False, pretty_exceptions_show_locals=False,
@@ -147,7 +147,7 @@ def score(condition: str = typer.Option("full", help="full | panel_vote | single
     _confirm_cost(estimate_cost(responses, bank, mcfg, exp, plan, replicate), yes)
     run_id = new_run_id(f"{condition}_r{replicate}")
     write_manifest(run_id, exp.path("logs_dir"), exp.path("results_dir"),
-                   ["config/items.yaml", str(models), "config/experiment.yaml", "config/moodle_columns.yaml"],
+                   [str(items_path()), str(models), "config/experiment.yaml", "config/moodle_columns.yaml"],
                    exp.seeds, {"condition": condition, "subset": subset, "replicate": replicate,
                                "n_responses": len(responses), "models": mcfg.model_dump(mode="json"),
                                "plan": plan.__dict__})
@@ -221,7 +221,7 @@ def benchmark(models: Path = ModelsOpt,
     sample = responses.groupby("item_id").head(n)
     run_id = new_run_id("benchmark")
     write_manifest(run_id, exp.path("logs_dir"), exp.path("results_dir"),
-                   ["config/items.yaml", str(models), "config/experiment.yaml"], exp.seeds,
+                   [str(items_path()), str(models), "config/experiment.yaml"], exp.seeds,
                    {"condition": "benchmark", "n_per_item": n, "models": mcfg.model_dump(mode="json")})
     engine = CallEngine(mcfg, run_id, exp.path("cache"), exp.path("logs_dir"))
     renderer = PromptRenderer(rationale_style=exp.prompt_options.get("rationale_style", "standard"))
@@ -262,6 +262,8 @@ def demo(n_students: int = typer.Option(50, help="Sentetik öğrenci sayısı"),
         env_path.write_text((text + "\n" if text else "") + f"MAPPING_KEY={key}\n", encoding="utf-8")
         os.environ["MAPPING_KEY"] = key
     _fetch_dictionary()
+    # Sentetik deneme her zaman sentetik 4 soruluk rubrikle çalışır (gerçek çalışmanın soru dosyasından bağımsız)
+    os.environ["SCORING_ITEMS"] = "config/items.yaml"
 
     def step(title: str, args: list[str]):
         typer.echo(f"\n== {title} ==")
@@ -361,7 +363,7 @@ def embed_baseline_cmd(offline_demo: bool = typer.Option(False, help="HuggingFac
         condition = "embedding"
     run_id = new_run_id(condition)
     write_manifest(run_id, exp.path("logs_dir"), exp.path("results_dir"),
-                   ["config/items.yaml", "config/experiment.yaml"], exp.seeds,
+                   [str(items_path()), "config/experiment.yaml"], exp.seeds,
                    {"condition": condition, "encoders": [{"name": e.name, "revision": getattr(e, "revision", None)}
                                                           for e in encoders]})
     feats = similarity_features(gold, bank, encoders, emb.get("softmax_temperature", 0.05))

@@ -1,0 +1,295 @@
+# GERÇEK ÇALIŞMA SORULARI — Halüsinasyon ve Etik (2 açık uçlu soru)
+# İnsan değerlendiriciler için ayrıntılı kodlama kılavuzu: docs/puanlama_kilavuzu_halusinasyon_etik.md
+#
+# Kullanım: config/experiment.yaml > items_file: config/items.halusinasyon_etik.yaml
+# Moodle'da soru sırası: 1 = S1 (halüsinasyon), 2 = S2 (etik)  -> config/moodle_columns.yaml > item_map
+#
+# Puanlama: analitik; her soruda 3 ölçüt × 0–4 puan = soru başına 0–12.
+# Her alt madde (a)(b)(c) bir ölçüte karşılık gelir; ancak bir bilgi hangi bölümde yazılmış olursa olsun
+# ilgili ölçütte puanlanır (kılavuz, Genel Kural 2).
+#
+# ÇAPA YANITLAR: Aşağıdaki çapalar araştırmacı tarafından yazılmış ÖRNEK yanıtlardır. Pilot uygulamadan sonra,
+# altın sete GİRMEYECEK gerçek pilot yanıtlarla değiştirilmeleri ya da desteklenmeleri önerilir (o zaman
+# source_response_id doldurulur; check-leakage altın setle çakışmayı denetler).
+
+defaults:
+  score_min: 0
+  score_max: 4
+
+items:
+  # ===================================================================================== S1 HALÜSİNASYON
+  - item_id: S1
+    bloom: alt
+    bloom_level: anlama-uygulama
+    question: >-
+      Büyük dil modelleri (ör. ChatGPT, Gemini, Claude) bazen "halüsinasyon" olarak adlandırılan hatalar yapar.
+      (a) Büyük dil modellerinde halüsinasyonun ne olduğunu açıklayınız ve somut bir örnek veriniz.
+      (b) Bu modellerin neden halüsinasyon ürettiğini açıklayınız.
+      (c) Halüsinasyonların zararını azaltmak için hem kullanıcıların hem de modeli geliştirenlerin neler
+      yapabileceğini açıklayınız.
+    reference_answer: >-
+      Halüsinasyon, bir dil modelinin gerçeğe aykırı, doğrulanamayan ya da tamamen uydurma bir bilgiyi akıcı ve
+      kendinden emin bir dille, sanki doğruymuş gibi üretmesidir. Model bunu bilerek yapmaz; bir niyeti yoktur.
+      Ancak cevap ikna edici göründüğü için kullanıcı hatayı fark etmekte zorlanır. Örneğin bir öğrenci ödevi için
+      kaynak istediğinde model, yazar adı, yıl ve dergi adıyla birlikte gerçekte var olmayan bir makale
+      uydurabilir. Bunun temel nedeni, büyük dil modellerinin bilgiyi bir veri tabanından aramaması; eğitim
+      verisindeki örüntülere dayanarak bir sonraki kelimeyi olasılıksal olarak tahmin etmesidir. Bu süreç dilsel
+      olarak tutarlı bir metin üretir, ama metnin doğruluğunu denetleyen bir mekanizma içermez. Ayrıca eğitim
+      verisindeki eksik, hatalı ya da güncel olmayan bilgiler; eğitimin akıcı ve yardımcı görünen cevapları
+      ödüllendirmesi nedeniyle modelin "bilmiyorum" demek yerine tahmin yürütmesi ve belirsiz ya da yanlış öncüllü
+      sorular da halüsinasyona yol açar. Kullanıcılar, özellikle önemli bilgileri güvenilir kaynaklardan
+      doğrulamalı, modelden kaynak istemeli ve bu kaynakların gerçekten var olduğunu kontrol etmeli, sağlık ya da
+      hukuk gibi kritik konularda yalnızca modele güvenmemelidir. Geliştiriciler ise modeli güvenilir belgelere
+      dayandıran erişimle zenginleştirilmiş üretim (RAG) kullanabilir. Böylece cevap, modelin belleği yerine
+      bulunup getirilen belgelerden üretilir ve kaynak gösterilebilir. Ayrıca modeli emin olmadığında bunu
+      belirtecek biçimde eğitebilir, güven göstergeleri ve uyarılar ekleyebilir, modeli sistematik testlerle
+      değerlendirebilirler.
+    criteria:
+      - criterion_id: C1
+        name: Tanım ve örnek
+        description: >-
+          Halüsinasyonun doğru tanımı (gerçeğe aykırı, doğrulanamayan ya da uydurma bilginin üretilmesi) ve uygun,
+          somut bir örnek. En üst düzey, ayırt edici özelliğin (akıcı ve kendinden emin sunum ya da kasıtlı yalan
+          olmaması) kavranmasını gerektirir.
+        levels:
+          0: Tanım yok, tamamen yanlış (ör. çökme, virüs, yavaşlama, görüntü bozulması) ya da soruyla ilgisiz.
+          1: Çok genel ya da eksik tanım ("yanlış cevap vermesi", "hata yapması"); uydurma bilgi fikri yok. Örnek yok ya da örnek halüsinasyon değil.
+          2: Temel tanım doğru (gerçeğe aykırı ya da uydurma bilgi üretme), ama örnek yok ya da çok genel ("yanlış bilgi verebilir"). Ya da uygun somut örnek var, ama tanım belirsiz.
+          3: Doğru tanım ve somut, uygun bir örnek (ör. var olmayan kaynak, yanlış tarih ya da istatistik, olmayan yasa maddesi).
+          4: Doğru tanım ve somut örnek; ek olarak bilginin akıcı ve kendinden emin biçimde, sanki doğruymuş gibi sunulduğu ya da bunun kasıtlı bir yalan olmadığı açıkça belirtilmiş.
+      - criterion_id: C2
+        name: Nedenler
+        description: >-
+          Halüsinasyonun nedenlerinin doğru açıklanması. Kabul edilen nedenler: (a) olasılıksal kelime tahmini /
+          doğruluk denetiminin olmaması, (b) eğitim verisindeki eksik, hatalı ya da güncel olmayan bilgi,
+          (c) eğitimin akıcı cevabı ödüllendirmesi ve "bilmiyorum" demede zayıflık, (d) belirsiz ya da yanlış
+          öncüllü istemler, (e) veride az temsil edilen ya da uzmanlık gerektiren konular.
+        levels:
+          0: Neden yok ya da tamamen yanlış (ör. internet kesintisi, virüs, "bilerek yalan söylemek için tasarlanmıştır", "bilgisayar yorulur").
+          1: Belirsiz ya da yüzeysel ("yapay zekâ mükemmel değildir", "hata yapabilir"); kabul edilen nedenlerden hiçbiri adlandırılmamış.
+          2: Kabul edilen nedenlerden yalnızca biri adlandırılmış, açıklanmamış (ör. "eğitim verisi yanlış olabilir").
+          3: Kabul edilen nedenlerden en az ikisi adlandırılmış ya da biri mekanizmasıyla (bu sonucu neden doğurduğu) açıklanmış.
+          4: En az iki neden ve en az biri mekanizmasıyla doğru açıklanmış; olasılıksal üretimin doğruluk garantisi vermediği anlaşılmış.
+      - criterion_id: C3
+        name: Azaltma yolları (kullanıcı ve geliştirici)
+        description: >-
+          Zararı azaltmaya yönelik doğru ve somut yöntemler. Kullanıcı: doğrulama, kaynak isteme ve kontrol,
+          kritik kararda tek başına güvenmeme, açık istem, belirsizliği belirtmesini isteme. Geliştirici: RAG ya
+          da güvenilir kaynağa dayandırma, kaynak gösterme, "bilmiyorum" demeyi ödüllendiren eğitim, güven
+          göstergesi ya da uyarı, olgu denetimi, veri kalitesi, test ve değerlendirme.
+        levels:
+          0: Öneri yok ya da halüsinasyonla ilgisiz (ör. "antivirüs kurulmalı", "internet hızlandırılmalı").
+          1: Tek ve belirsiz öneri ("dikkatli olunmalı", "hiç kullanılmamalı").
+          2: Yalnızca bir doğru ve somut yöntem (ör. "bilgiler başka kaynaktan kontrol edilmeli").
+          3: En az iki doğru ve somut yöntem (yalnızca kullanıcı ya da yalnızca geliştirici tarafı olabilir).
+          4: Hem kullanıcı hem geliştirici için en az birer doğru yöntem (toplam en az üç) ve en az birinin nasıl işe yaradığı açıklanmış.
+    anchors:
+      - anchor_id: S1-A0
+        source: araştırmacı-örnek
+        source_response_id: null
+        scores: {C1: 0, C2: 0, C3: 0}
+        text: >-
+          Halüsinasyon yapay zekânın aşırı yüklenip çökmesidir. Bilgisayar ısınınca olur. Bunu önlemek için daha
+          güçlü bilgisayar alınmalı.
+      - anchor_id: S1-A1
+        source: araştırmacı-örnek
+        source_response_id: null
+        scores: {C1: 1, C2: 1, C3: 1}
+        text: >-
+          Halüsinasyon, modelin bazen yanlış cevap vermesidir. Çünkü yapay zekâ da mükemmel değildir, hata
+          yapabilir. Bu yüzden kullanırken dikkatli olmak lazım.
+      - anchor_id: S1-A2
+        source: araştırmacı-örnek
+        source_response_id: null
+        scores: {C1: 2, C2: 2, C3: 2}
+        text: >-
+          Halüsinasyon, modelin gerçekte olmayan, uydurma bilgiler üretmesidir. Bunun nedeni eğitildiği verilerde
+          yanlış bilgiler olmasıdır. Kullanıcılar verilen bilgileri başka kaynaklardan kontrol etmelidir.
+      - anchor_id: S1-A3
+        source: araştırmacı-örnek
+        source_response_id: null
+        scores: {C1: 3, C2: 3, C3: 3}
+        text: >-
+          Halüsinasyon, dil modelinin doğru olmayan ya da uydurma bilgiyi cevap olarak vermesidir. Örneğin ödev için
+          kaynak istediğimde bana gerçekte olmayan bir kitap adı ve yazarı verebilir. Bunun nedeni modelin
+          kelimeleri olasılığa göre üretmesi ve eğitim verisinin eski ya da eksik olabilmesidir. Kullanıcı verdiği kaynakları kütüphanede ya da Google Akademik'te aramalı,
+          önemli konularda başka kaynaklarla karşılaştırmalıdır.
+      - anchor_id: S1-A4
+        source: araştırmacı-örnek
+        source_response_id: null
+        scores: {C1: 4, C2: 4, C3: 4}
+        text: >-
+          Halüsinasyon, modelin gerçeğe aykırı ya da tamamen uydurma bir bilgiyi çok akıcı ve emin bir dille,
+          sanki doğruymuş gibi sunmasıdır; model yalan söylemeye çalışmaz ama sonuç ikna edici olduğu için hata
+          kolay fark edilmez. Örneğin bir avukatın sorusuna var olmayan mahkeme kararları numaralarıyla
+          sıralanabilir. Bunun nedeni modelin bilgi aramayıp, eğitim verisindeki kalıplara göre en olası sonraki
+          kelimeyi üretmesidir: dilsel olarak tutarlı olan şey her zaman doğru değildir ve içeride bir doğruluk
+          kontrolü yoktur. Eğitimde akıcı ve yardımsever cevapların ödüllendirilmesi de modeli "bilmiyorum"
+          demek yerine tahmin etmeye iter. Kullanıcı önemli bilgileri ve kaynakları kendisi doğrulamalı, kritik
+          kararları yalnızca modele dayandırmamalıdır. Geliştiriciler RAG ile modeli güvenilir belgelere
+          bağlayabilir; model cevabı bulunan belgeden ürettiği için uydurma azalır ve kaynak gösterilebilir. Ayrıca
+          modele emin olmadığında bunu söylemesi öğretilebilir.
+      - anchor_id: S1-K1
+        source: araştırmacı-örnek (karma profil)
+        source_response_id: null
+        scores: {C1: 4, C2: 1, C3: 2}
+        text: >-
+          Halüsinasyon, modelin hiç var olmayan bir bilgiyi büyük bir özgüvenle, gerçekmiş gibi anlatmasıdır; bunu
+          kandırmak için yapmaz ama okuyan kişi inanabilir. Mesela bana Türkiye'de 2019'da çıkmış olmayan bir yasa
+          maddesini numarasıyla birlikte anlattı. Neden böyle olduğunu tam bilmiyorum, sanırım teknoloji henüz
+          gelişmedi. Bilgileri başka bir kaynaktan teyit etmek gerekir.
+      - anchor_id: S1-K2
+        source: araştırmacı-örnek (karma profil)
+        source_response_id: null
+        scores: {C1: 1, C2: 3, C3: 4}
+        text: >-
+          Halüsinasyon modelin hatalı çalışmasıdır. Model kelimeleri olasılığa göre üretir; eğitim verisi de
+          güncel olmayabilir. Kullanıcılar cevapları güvenilir kaynaklardan doğrulamalı ve
+          modelden kaynak isteyip bu kaynakları kontrol etmelidir. Geliştiriciler RAG kullanarak modeli güvenilir
+          bir belge tabanına bağlayabilir; böylece model cevabı ezberinden değil getirilen belgelerden oluşturur.
+          Ayrıca emin olmadığında uyarı vermesi sağlanabilir.
+
+  # ===================================================================================== S2 ETİK
+  - item_id: S2
+    bloom: üst
+    bloom_level: değerlendirme
+    question: >-
+      Bir şirket, iş başvurularındaki özgeçmişleri (CV) ön elemeden geçirmek için bir yapay zekâ sistemi
+      kullanmaya karar vermiştir. Sistem, şirketin son on yılda işe aldığı çalışanların verileriyle eğitilmiştir.
+      Başvuruları otomatik olarak puanlamakta ve düşük puan alan adayları hiçbir insan incelemesi olmadan elemektedir.
+      (a) Bu uygulamanın doğurabileceği etik sorunları belirleyiniz ve her birinin neden sorun olduğunu açıklayınız.
+      (b) Bu sorunlardan etkilenebilecek tarafları (paydaşları) ve olası sonuçlarını tartışınız.
+      (c) Şirkete, bu uygulamayı sürdürüp sürdürmemesi ve sürdürecekse hangi koşullarla ve önlemlerle sürdürmesi
+      gerektiği konusunda gerekçeli bir öneri sununuz.
+    reference_answer: >-
+      En önemli sorun yanlılık ve ayrımcılıktır. Sistem son on yılın işe alım verisiyle eğitildiği için o dönemde
+      belirli bir cinsiyetten, okuldan, yaş grubundan ya da bölgeden daha çok kişi işe alındıysa bu örüntüyü
+      "başarı" olarak öğrenir ve benzer olmayan adayları düşük puanlar. Cinsiyet doğrudan veri olarak
+      kullanılmasa bile kadınlara özgü bir kulüp, okul adı ya da adres gibi vekil değişkenler üzerinden dolaylı
+      ayrımcılık sürebilir; geçmişteki eşitsizlik böylece otomatikleşir. İkinci sorun şeffaflık ve
+      açıklanabilirliktir: aday neden elendiğini bilemez, model kara kutu gibi çalışır. Üçüncüsü insan denetiminin
+      olmaması ve hesap verebilirliktir: hatalı bir elemede sorumlunun kim olduğu belirsizdir; KVKK, yalnızca
+      otomatik işlemeyle aleyhe sonuç doğuran kararlara itiraz hakkı tanır. Ayrıca aday ve çalışan verilerinin
+      rıza ve amaçla sınırlılık ilkelerine uygun işlenmesi bir gizlilik sorunudur. Bu durumdan en çok, sistemin
+      öğrendiği profile benzemeyen adaylar etkilenir; nitelikli oldukları hâlde haksız yere elenir, iş fırsatı
+      kaybederler. Şirket de yetenekli adayları kaçırır, çalışan çeşitliliği azalır, dava ve itibar riskiyle
+      karşılaşır. Sistem binlerce başvuruya aynı kuralı uyguladığı için bireysel haksızlıklar toplumsal ölçekte
+      eşitsizliği derinleştirebilir. Verimlilik ile adalet arasında bir gerilim vardır. Önerim, sistemin tek başına
+      karar veren değil, insan değerlendiriciyi destekleyen bir araç olarak kullanılmasıdır. Hiçbir aday insan
+      incelemesi olmadan elenmemelidir. Kullanıma devam etmeden önce bağımsız bir yanlılık denetimi yapılmalı;
+      cinsiyet, yaş ve benzeri gruplar arasındaki seçilme oranları düzenli olarak karşılaştırılıp raporlanmalı;
+      vekil değişkenler çıkarılmalı, eğitim verisi dengelenmelidir. Adaylara yapay zekâ kullanıldığı bildirilmeli,
+      karar gerekçesi ve itiraz yolu sunulmalı, veriler KVKK'ya uygun işlenmelidir. Denetimde gruplar arasında
+      anlamlı fark bulunursa sistem durdurulmalıdır.
+    criteria:
+      - criterion_id: C1
+        name: Etik sorunların belirlenmesi ve açıklanması
+        description: >-
+          Kabul edilen etik sorunlar: (a) yanlılık/ayrımcılık (geçmiş veriden öğrenme, vekil değişkenler),
+          (b) şeffaflık/açıklanabilirlik, (c) hesap verebilirlik/itiraz hakkı, (d) insan denetiminin yokluğu
+          (tam otomatik karar), (e) gizlilik/kişisel verilerin korunması, (f) doğruluk ya da geçerlik ("geçmişte
+          işe alınan = iyi aday" varsayımı, hatalı elemenin bedeli). "Adlandırma": kavramın özünü doğru söylemek;
+          "açıklama": bu senaryoda neden sorun olduğunu en az bir cümleyle kurmak.
+        levels:
+          0: Etik sorun yok ya da yalnızca teknik veya maliyet konuları (ör. "sistem pahalıdır", "yavaş çalışır").
+          1: Belirsiz tek bir endişe ("haksızlık olabilir", "yapay zekâ hata yapar"); etik bir kavram adlandırılmamış.
+          2: Bir etik sorun adlandırılıp açıklanmış, ya da birden çok sorun yalnızca liste hâlinde adlandırılmış (açıklamasız).
+          3: En az iki farklı etik sorun doğru adlandırılmış ve her biri için neden sorun olduğu açıklanmış.
+          4: En az üç farklı sorun açıklanmış ve yanlılığın bu senaryodaki mekanizması (geçmiş işe alım verisinden öğrenip eşitsizliği yeniden üretme ya da vekil değişkenler) doğru açıklanmış.
+      - criterion_id: C2
+        name: Paydaşlar ve sonuçlar
+        description: >-
+          Etkilenen taraflar ve somut sonuçlar: adaylar (özellikle dezavantajlı gruplar), şirket (yetenek kaybı,
+          çeşitlilik, hukuki ya da itibar riski), mevcut çalışanlar (verileri kullanılan), İK uzmanları,
+          toplum ya da işgücü piyasası, yazılım sağlayıcı, düzenleyiciler. En üst düzey, sonuçlar arasında ilişki,
+          ölçek ya da çıkar çatışması tartışmasını gerektirir.
+        levels:
+          0: Paydaş ya da sonuç belirtilmemiş.
+          1: Genel ifade ("insanlar zarar görür", "herkes etkilenir"); belirli bir paydaş ya da somut sonuç yok.
+          2: Bir paydaş ve onun için bir somut sonuç.
+          3: En az iki farklı paydaş, her biri için somut sonuç.
+          4: En az iki paydaş ve somut sonuçlar; ek olarak ölçek etkisi, bireysel zararın toplumsal eşitsizliğe dönüşmesi ya da çatışan çıkarlar (verimlilik ve adalet) tartışılmış.
+      - criterion_id: C3
+        name: Gerekçeli öneri
+        description: >-
+          Kararın yönü (sürdürme ya da durdurma) değil gerekçe kalitesi puanlanır. Kabul edilen önlemler: insan
+          denetimi (destek aracı, düşük puanlıların insan tarafından incelenmesi), bağımsız ya da düzenli yanlılık
+          denetimi (gruplara göre seçilme oranları), vekil değişkenlerin çıkarılması ve dengeli veri, şeffaflık
+          (YZ kullanımının bildirilmesi, gerekçe, itiraz hakkı), KVKK uyumu, pilot uygulama ve izleme,
+          açıklanabilir model.
+        levels:
+          0: Öneri yok.
+          1: Gerekçesiz kesin yargı ("kesinlikle kullanılmalı", "yasaklanmalı").
+          2: Öneri var, ancak gerekçesi zayıf ya da önlemler belirsiz ("dikkatli kullanılmalı", "kontrol edilmeli").
+          3: Gerekçeli ve tutarlı öneri, en az iki somut önlemle.
+          4: Belirlenen sorunlarla doğrudan eşleşen en az üç somut önlem; koşullu karar (hangi koşulda sürdürülmeli ya da durdurulmalı) ve önlemlerin nasıl izleneceği belirtilmiş.
+    anchors:
+      - anchor_id: S2-A0
+        source: araştırmacı-örnek
+        source_response_id: null
+        scores: {C1: 0, C2: 0, C3: 0}
+        text: >-
+          Yapay zekâ çok hızlı çalıştığı için şirketin işini kolaylaştırır. Sistemin kurulumu biraz pahalı olabilir
+          ama zamanla kendini amorti eder.
+      - anchor_id: S2-A1
+        source: araştırmacı-örnek
+        source_response_id: null
+        scores: {C1: 1, C2: 1, C3: 1}
+        text: >-
+          Bu uygulama bazı insanlara haksızlık olabilir çünkü yapay zekâ hata yapar. İnsanlar bundan zarar
+          görebilir. Bence şirket bu sistemi kesinlikle kullanmamalı.
+      - anchor_id: S2-A2
+        source: araştırmacı-örnek
+        source_response_id: null
+        scores: {C1: 2, C2: 2, C3: 2}
+        text: >-
+          Sistem yanlı olabilir, şeffaflık ve gizlilik sorunları da vardır. Bu durumda bazı adaylar haksız yere
+          elenip işe girme şansını kaybedebilir. Şirket sistemi dikkatli kullanmalı ve sonuçları kontrol etmelidir.
+      - anchor_id: S2-A3
+        source: araştırmacı-örnek
+        source_response_id: null
+        scores: {C1: 3, C2: 3, C3: 3}
+        text: >-
+          Birinci sorun yanlılıktır: sistem geçmişte işe alınanlara benzeyen adayları tercih edeceği için farklı
+          geçmişten gelenler dezavantajlı olur. İkinci sorun şeffaflıktır: adaylar neden elendiklerini bilemez ve
+          itiraz edemez. Bundan adaylar haksız yere iş fırsatı kaybederek etkilenir; şirket de nitelikli kişileri
+          kaçırır ve dava riskiyle karşılaşabilir. Şirket sistemi kullanmaya devam edebilir, ama düşük puanlı
+          başvurular mutlaka bir İK uzmanı tarafından incelenmeli ve sistem düzenli olarak yanlılık açısından
+          denetlenmelidir.
+      - anchor_id: S2-A4
+        source: araştırmacı-örnek
+        source_response_id: null
+        scores: {C1: 4, C2: 4, C3: 4}
+        text: >-
+          Sistem son on yılın işe alım verisinden "iyi aday" profilini öğrendiği için geçmişte hangi gruplar daha
+          çok işe alındıysa onları kayırır; cinsiyet bilgisi kullanılmasa bile okul, adres ya da kulüp gibi vekil
+          değişkenler üzerinden ayrımcılık sürer. Yani eski eşitsizlik otomatikleşir. İkinci olarak karar
+          açıklanamaz; aday neden elendiğini öğrenemez. Üçüncüsü hiçbir insan kararı denetlemediği için hatada
+          sorumluluk belirsizdir ve aday, KVKK'nın otomatik kararlara itiraz hakkını kullanamaz. Bundan özellikle
+          kadınlar, yaşlı adaylar ya da az bilinen okullardan mezunlar etkilenir; nitelikli oldukları hâlde elenirler.
+          Şirket ise yetenek ve çeşitlilik kaybeder, hukuki ve itibar riski taşır. Sistem binlerce başvuruya aynı
+          önyargıyı uyguladığı için zarar toplumsal ölçeğe ulaşır; şirketin verimlilik kazancı adaylar aleyhine bir
+          adaletsizlikle elde edilmiş olur. Önerim şu: sistem yalnızca İK uzmanına öneri veren bir araç olsun ve
+          hiçbir aday insan incelemesi olmadan elenmesin. Kullanıma başlamadan önce bağımsız bir yanlılık denetimi
+          yapılsın, vekil değişkenler çıkarılsın, adaylara YZ kullanımı bildirilip itiraz yolu açılsın. Gruplara
+          göre seçilme oranları her üç ayda bir raporlansın; anlamlı fark çıkarsa sistem durdurulsun.
+      - anchor_id: S2-K1
+        source: araştırmacı-örnek (karma profil)
+        source_response_id: null
+        scores: {C1: 3, C2: 1, C3: 1}
+        text: >-
+          Birincisi ayrımcılık riskidir: sistem geçmişteki çalışanlara benzeyenleri seçeceği için farklı özellikteki
+          adaylar elenir. İkincisi kişisel verilerin gizliliğidir: adayların bilgileri izinsiz biçimde bir algoritmaya
+          verilmektedir ve bu veriler başka amaçla kullanılabilir. Bu durum birçok kişiyi olumsuz etkiler. Bence şirket
+          bu sistemi hemen bırakmalı.
+      - anchor_id: S2-K2
+        source: araştırmacı-örnek (karma profil)
+        source_response_id: null
+        scores: {C1: 1, C2: 3, C3: 4}
+        text: >-
+          Bu sistem bazı adaylara haksızlık yapabilir. Bundan adaylar etkilenir, çünkü iyi bir işe girme şanslarını
+          kaybederler; şirket de iyi çalışanları kaçırır ve adı kötüye çıkarsa itibar kaybeder. Önerim, sistemin
+          yalnızca ön sıralama için kullanılması ve düşük puanlı tüm başvuruların bir İK uzmanınca incelenmesidir.
+          Ayrıca kadın ve erkek, genç ve yaşlı adayların seçilme oranları her ay karşılaştırılmalı; aralarında büyük
+          fark çıkarsa sistem durdurulup yeniden eğitilmelidir. Adaylara da yapay zekâ kullanıldığı söylenmeli ve
+          sonuca itiraz edebilecekleri bir yol açılmalıdır.

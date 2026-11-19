@@ -99,7 +99,21 @@ class ItemBank(BaseModel):
         return [i.item_id for i in self.items]
 
 
-def load_items(path: str | Path = CONFIG_DIR / "items.yaml") -> ItemBank:
+def items_path() -> Path:
+    """Kullanılacak soru/rubrik dosyası: SCORING_ITEMS ortam değişkeni > experiment.yaml:items_file > config/items.yaml"""
+    import os
+    if os.environ.get("SCORING_ITEMS"):
+        return Path(os.environ["SCORING_ITEMS"])
+    exp = CONFIG_DIR / "experiment.yaml"
+    if exp.exists():
+        f = (yaml.safe_load(exp.read_text(encoding="utf-8")) or {}).get("items_file")
+        if f:
+            return Path(f)
+    return CONFIG_DIR / "items.yaml"
+
+
+def load_items(path: str | Path | None = None) -> ItemBank:
+    path = Path(path) if path else items_path()
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     d = raw.get("defaults", {})
     for it in raw["items"]:
