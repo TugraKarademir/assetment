@@ -440,6 +440,29 @@ def evaluate_cmd(bootstrap_reps: Optional[int] = typer.Option(None, help="Varsay
     typer.echo(f"Tablolar ve grafikler: {exp.path('results_dir')}/")
 
 
+@app.command("check-canary")
+def check_canary_cmd(canary_file: Path = typer.Option("config/canary.local.yaml", help="Gizli işaret dosyası")):
+    """Yanıtlarda gizli işaret (kanarya) izlerini arar: soru bir YZ'ye kopyalanıp yapıştırılmış olabilir."""
+    from .canary import flag_responses, load_canaries, summary
+    from .data import load_responses
+    from .utils import df_to_markdown, write_table
+    canaries = load_canaries(canary_file)
+    if not canaries:
+        typer.echo(f"İşaret dosyası yok ya da boş: {canary_file} (örnek: config/canary.example.yaml)", err=True)
+        raise typer.Exit(1)
+    exp = load_experiment()
+    responses = load_responses(exp.path("responses"))
+    responses = responses[~responses.is_empty]
+    flags = flag_responses(responses, canaries)
+    out = Path("data/derived/canary_flags.csv")       # yanıt kodlu liste: gizli (gitignore)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    flags.to_csv(out, index=False)
+    summ = summary(flags)
+    write_table(summ, exp.path("results_dir") / "canary_summary")   # yalnızca sayımlar
+    typer.echo(df_to_markdown(summ, ".1f"))
+    typer.echo(f"İşaretli yanıt listesi (gizli): {out}\nNot: eşleşme kanıt değil, işarettir.")
+
+
 @app.command("export-bias-data")
 def export_bias_data_cmd():
     """R'daki karma model için düz yanlılık veri dosyası (+ metin öznitelikleri)."""
@@ -450,6 +473,10 @@ def export_bias_data_cmd():
     gold = responses[responses.response_id.isin(folds.response_id)]
     checker = SpellChecker()
     feats = text_features(gold, checker)
+    from .canary import flag_responses, load_canaries
+    canaries = load_canaries()
+    if canaries:   # gizli işaret izi taşıyan yanıtlar analizde ayrıca ele alınabilsin
+        feats = feats.merge(flag_responses(gold, canaries)[["response_id", "canary_hit"]], on="response_id", how="left")
     p1, p2 = export_bias_data(cond, consensus, responses, bank, feats, exp.path("results_dir") / "bias", checker.method)
     typer.echo(f"Yazım denetimi: {checker.method}\n-> {p1}\n-> {p2}\nÖrnek R betiği: scripts/bias_model.R")
 

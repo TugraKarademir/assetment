@@ -174,3 +174,6 @@ results/bias/*
 # Sunucu kurulumu
 vendor/
 modeller/
+
+# Gizli işaretler (öğrenciler görmemeli)
+config/canary.local.yaml
