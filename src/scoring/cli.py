@@ -456,10 +456,16 @@ def ui(port: int = typer.Option(8501, help="Arayüz portu"),
         typer.echo("Arayüz için: uv sync --extra ui  (diğer ekstralarla birlikte: --extra spelling --extra embeddings)", err=True)
         raise typer.Exit(1)
     app_path = Path(__file__).with_name("ui.py")
-    typer.echo(f"Arayüz: http://{host}:{port}   (uzak sunucuda: ssh -N -L {port}:127.0.0.1:{port} kullanici@sunucu)")
+    url = f"http://{host}:{port}"
+    typer.echo(f"Arayüz: {url}   (uzak sunucuda: ssh -N -L {port}:127.0.0.1:{port} kullanici@sunucu)")
+    if open_browser:
+        # Streamlit'in "headless=false" kipi ilk açılışta e-posta sorar; bunun yerine tarayıcıyı kendimiz açıyoruz.
+        import threading
+        import webbrowser
+        threading.Timer(3.0, lambda: webbrowser.open(url)).start()
     raise typer.Exit(subprocess.call([sys.executable, "-m", "streamlit", "run", str(app_path),
                                       "--server.address", host, "--server.port", str(port),
-                                      "--server.headless", "false" if open_browser else "true",
+                                      "--server.headless", "true",
                                       "--browser.gatherUsageStats", "false",
                                       "--client.toolbarMode", "minimal"]))
 
