@@ -27,21 +27,64 @@ def gen_key():
     typer.echo("Bu satırı .env dosyasına ekleyin; anahtarı kaybederseniz eşleme tablosu açılamaz.", err=True)
 
 
+@app.command("inspect-export")
+def inspect_export_cmd(export: Path = typer.Argument(..., help="Moodle dışa aktarımı (CSV/XLSX)"),
+                       columns: Path = typer.Option("config/moodle_columns.yaml")):
+    """Dışa aktarımın yapısını gösterir (sütunlar, yanıt sayıları, soru metinlerinin başı). Öğrenci yanıtlarını ve
+    kimlik bilgilerini YAZDIRMAZ. Hangi 'Yanıt N' sütununun hangi soru olduğunu belirlemek için kullanın."""
+    from .moodle_io import inspect_export, load_column_map
+    from .utils import df_to_markdown
+    info = inspect_export(export, load_column_map(columns))
+    typer.echo(f"Satır (deneme) sayısı: {info['n_rows']}")
+    typer.echo("Kimlik sütunları: " + (", ".join(f"{k}={v}" for k, v in info["identity"].items()) or "BULUNAMADI"))
+    typer.echo("Yanıt sütunları:")
+    typer.echo(df_to_markdown(pd.DataFrame(info["responses"]), ".1f"))
+    if info["other_columns"]:
+        typer.echo("Okunmayacak (atılacak) diğer sütunlar: " + ", ".join(map(str, info["other_columns"])))
+    items = load_items()
+    typer.echo(f"Kullanılacak soru dosyası: {items_path()} -> sorular: {', '.join(items.ids)}")
+    typer.echo("Eşleme örneği (Moodle soru no = soru kodu):  --item-map \"5=S1,6=S2\"  "
+               "(ya da config/moodle_columns.yaml > item_map)")
+
+
 @app.command()
 def anonymize(export: Optional[Path] = typer.Option(None, help="Moodle dışa aktarımı (CSV/XLSX)"),
-              columns: Path = typer.Option("config/moodle_columns.yaml")):
-    """Moodle dışa aktarımını okur, kimlikleri koda çevirir, metin içi kişisel verileri maskeler."""
+              columns: Path = typer.Option("config/moodle_columns.yaml"),
+              consent: Optional[Path] = typer.Option(None, help="Onay veren öğrencilerin listesi (CSV/XLSX; "
+                                                     "e-posta / öğrenci no / kullanıcı adı). data/private/ altında tutun."),
+              no_consent_filter: bool = typer.Option(False, "--no-consent-filter",
+                                                     help="Onam filtresi uygulama (YALNIZCA sentetik veri için)"),
+              item_map: Optional[str] = typer.Option(None, help='Moodle soru no -> soru kodu, ör. "5=S1,6=S2"')):
+    """Moodle dışa aktarımını okur, yalnızca onay verenleri alır, kimlikleri koda çevirir, metin içi kişisel verileri maskeler."""
     from .anonymize import anonymize_records
-    from .moodle_io import load_column_map, read_moodle_export
+    from .moodle_io import load_column_map, parse_item_map, read_moodle_export
     exp = load_experiment()
     export = export or exp.path("raw_export")
-    records = read_moodle_export(export, load_column_map(columns))
+    colmap = load_column_map(columns)
+    imap = parse_item_map(item_map, colmap)
+    unknown = set(imap.values()) - set(load_items().ids)
+    if unknown:
+        raise typer.BadParameter(f"Eşlemede soru dosyasında olmayan kodlar var: {unknown} (soru dosyası: {items_path()})")
+    records = read_moodle_export(export, colmap, imap)
+    if consent:
+        from .consent import filter_records, load_consent
+        records, st = filter_records(records, load_consent(consent, colmap))
+        typer.echo(f"Onam: dışa aktarımdaki {st['students_in_export']} öğrenciden {st['students_consented']} onaylı; "
+                   f"{st['students_excluded_no_consent']} öğrenci onam vermediği için ALINMADI. "
+                   f"Onam listesinde olup dışa aktarımda bulunmayan: {st['consent_ids_not_in_export']}.")
+        if not records:
+            raise typer.Exit("Onaylı öğrenci yanıtı bulunamadı; onam dosyasındaki tanımlayıcıları kontrol edin.")
+    elif not no_consent_filter:
+        typer.echo("Gerçek veride onam filtresi zorunludur: --consent data/private/onam.csv  "
+                   "(sentetik veri için: --no-consent-filter)", err=True)
+        raise typer.Exit(1)
     df = anonymize_records(records, exp.path("mapping"), exp.path("responses"),
                            exp.path("pii_report_private"), exp.path("pii_summary"))
     typer.echo(f"{df.student_code.nunique()} öğrenci, {len(df)} yanıt anonimleştirildi -> {exp.path('responses')}")
+    typer.echo("Soru başına yanıt: " + str(df[~df.is_empty].groupby("item_id").size().to_dict()))
     typer.echo(f"Maskelenen öğe: {int(df.n_masked.sum())} ({(df.n_masked > 0).sum()} yanıtta); "
                f"maskelenmeyip işaretlenen: {int(df.n_flagged_unmasked.sum())}")
-    typer.echo(f"Gizli ayrıntılı rapor: {exp.path('pii_report_private')}  |  Özet: {exp.path('pii_summary')}")
+    typer.echo(f"Gizli ayrıntılı rapor (elle kontrol edin): {exp.path('pii_report_private')}  |  Özet: {exp.path('pii_summary')}")
 
 
 @app.command("sample-gold")
@@ -53,7 +96,10 @@ def sample_gold_cmd(per_item: Optional[int] = typer.Option(None, help="Soru baş
     from .sampling import assign_folds, sample_gold, write_labelstudio, write_rating_sheet
     exp, bank = load_experiment(), load_items()
     responses = load_responses(exp.path("responses"))
-    official = official_scores(load_human_scores(exp.path("human_scores")))
+    hs_path = exp.path("human_scores")
+    official = official_scores(load_human_scores(hs_path)) if hs_path.exists() else None
+    if official is None or official.empty:
+        typer.echo("Resmî not bulunamadı: katmanlar yanıt uzunluğuna göre oluşturulacak.")
     n = per_item or exp.gold["synthetic_per_item" if synthetic else "per_item"]
     seed = exp.seeds["gold_sampling"]
     anchor_sources = {a.source_response_id for it in bank.items for a in it.anchors if a.source_response_id}
@@ -67,6 +113,101 @@ def sample_gold_cmd(per_item: Optional[int] = typer.Option(None, help="Soru baş
         cfg = write_labelstudio(gold, responses, bank, exp.path("gold_labelstudio"), seed)
         msg += f"\nLabel Studio: {exp.path('gold_labelstudio')} (+ {cfg.name})"
     typer.echo(msg + f"\nPuanlayıcı dosyası: {exp.path('gold_excel')}\nKatlar: {exp.path('gold_folds')}")
+
+
+def _item_of_map(responses) -> dict:
+    return dict(zip(responses.response_id, responses.item_id))
+
+
+@app.command("calibration-sheet")
+def calibration_sheet_cmd(round_no: int = typer.Option(1, "--round", help="Kalibrasyon turu (1, 2, ...)"),
+                          per_item: int = typer.Option(10, help="Soru başına yanıt (kılavuz: 10)")):
+    """Puanlayıcı kalibrasyonu için altın sete GİRMEYEN yanıtlardan Excel üretir (önce sample-gold çalıştırın)."""
+    from .data import load_responses
+    from .ratings import sample_calibration
+    from .sampling import write_rating_sheet
+    exp, bank = load_experiment(), load_items()
+    responses = load_responses(exp.path("responses"))
+    gold = set(pd.read_csv(exp.path("gold_sample"), dtype=str).response_id)
+    prev = set()
+    for f in Path("data/derived").glob("calibration_round*.csv"):
+        if f.stem != f"calibration_round{round_no}":
+            prev |= set(pd.read_csv(f, dtype=str).response_id)
+    cal = sample_calibration(responses, gold, per_item, seed=exp.seeds["gold_sampling"] + 1000 + round_no, exclude=prev)
+    cal.to_csv(f"data/derived/calibration_round{round_no}.csv", index=False)
+    out = Path(f"data/derived/calibration_round{round_no}.xlsx")
+    write_rating_sheet(cal.assign(stratum=0), responses, bank, out, exp.seeds["gold_sampling"] + round_no)
+    typer.echo(f"Kalibrasyon turu {round_no}: {len(cal)} yanıt ({cal.groupby('item_id').size().to_dict()}) -> {out}\n"
+               f"Her puanlayıcıya bir kopya verin; doldurulunca: scoring import-ratings --file ... --set calibration{round_no}")
+
+
+@app.command("import-ratings")
+def import_ratings_cmd(file: Path = typer.Option(..., help="Doldurulmuş puanlayıcı Excel dosyası"),
+                       rater_id: str = typer.Option(..., help="Puanlayıcı kodu, ör. H1 (ad yazmayın)"),
+                       role: str = typer.Option(..., help="rater1 | rater2 | adjudicator | official"),
+                       set_name: str = typer.Option("gold", "--set", help="gold | official | calibration1 | calibration2 ...")):
+    """Doldurulmuş puanlayıcı/hakem Excel'ini data/human_scores.csv dosyasına aktarır (eksik ve geçersizleri raporlar)."""
+    from .data import load_responses
+    from .ratings import completeness, merge_into_human_scores, read_rating_workbook
+    if role not in ("rater1", "rater2", "adjudicator", "official"):
+        raise typer.BadParameter("role: rater1 | rater2 | adjudicator | official")
+    exp, bank = load_experiment(), load_items()
+    responses = load_responses(exp.path("responses"))
+    item_of = _item_of_map(responses)
+    scores, warnings = read_rating_workbook(file, bank)
+    unknown = sorted(set(scores.response_id) - set(item_of))
+    if unknown:
+        warnings.append(f"Bilinmeyen yanıt kodları atlandı: {unknown[:10]}{' …' if len(unknown) > 10 else ''}")
+        scores = scores[scores.response_id.isin(item_of)]
+    for w in warnings:
+        typer.echo("UYARI: " + w, err=True)
+    if role in ("rater1", "rater2"):
+        if set_name == "gold":
+            expected = set(pd.read_csv(exp.path("gold_sample"), dtype=str).response_id)
+        elif set_name.startswith("calibration"):
+            expected = set(pd.read_csv(f"data/derived/calibration_round{set_name[11:]}.csv", dtype=str).response_id)
+        else:
+            expected = set(scores.response_id)
+        miss = completeness(scores, expected, bank, item_of)
+        if miss:
+            typer.echo(f"UYARI: {len(miss)} yanıtta eksik puan var, ör.: {miss[:5]}", err=True)
+    merge_into_human_scores(exp.path("human_scores"), scores, rater_id, role, set_name)
+    typer.echo(f"{len(scores)} puan aktarıldı ({rater_id}, {role}, {set_name}) -> {exp.path('human_scores')}")
+
+
+@app.command("rater-agreement")
+def rater_agreement_cmd(set_name: str = typer.Option("gold", "--set", help="gold | calibration1 | calibration2 ...")):
+    """İki puanlayıcı arasındaki uyum (tam/bitişik uyum, QWK) ve kalibrasyon hedefleri (tam ≥ %70, QWK ≥ .80)."""
+    from .data import load_human_scores, load_responses
+    from .ratings import disagreements, rater_agreement
+    from .utils import df_to_markdown
+    exp, bank = load_experiment(), load_items()
+    human = load_human_scores(exp.path("human_scores"))
+    item_of = _item_of_map(load_responses(exp.path("responses")))
+    t = rater_agreement(human, set_name, bank, item_of)
+    if t.empty:
+        typer.echo(f"'{set_name}' için iki puanlayıcının (rater1, rater2) puanları bulunamadı.", err=True)
+        raise typer.Exit(1)
+    typer.echo(df_to_markdown(t, ".3f"))
+    n_dis = len(disagreements(human, set_name))
+    typer.echo(f"Ayrışan yanıt × ölçüt sayısı: {n_dis}" + ("   -> hakem dosyası: scoring adjudication-sheet"
+                                                        if set_name == "gold" and n_dis else ""))
+
+
+@app.command("adjudication-sheet")
+def adjudication_sheet_cmd():
+    """İki puanlayıcının ayrıştığı altın set yanıtları için hakem Excel'i (puanlayıcı puanları gösterilmez)."""
+    from .data import load_human_scores, load_responses
+    from .ratings import disagreements, write_adjudication_sheet
+    exp, bank = load_experiment(), load_items()
+    dis = disagreements(load_human_scores(exp.path("human_scores")), "gold")
+    if dis.empty:
+        typer.echo("Ayrışma yok; hakem puanlaması gerekmiyor.")
+        return
+    out = Path("data/derived/adjudication_sheet.xlsx")
+    n = write_adjudication_sheet(dis, load_responses(exp.path("responses")), bank, out, exp.seeds["gold_sampling"] + 7)
+    typer.echo(f"{n} yanıt ({len(dis)} ölçüt) hakeme -> {out}\n"
+               "Doldurulunca: scoring import-ratings --file ... --rater-id H3 --role adjudicator --set gold")
 
 
 @app.command("check-leakage")
@@ -274,7 +415,7 @@ def demo(n_students: int = typer.Option(50, help="Sentetik öğrenci sayısı"),
 
     py, cli = sys.executable, [sys.executable, "-m", "scoring.cli"]
     step("1/9 Sentetik sınav dışa aktarımı", [py, "scripts/make_synthetic.py", "--n-students", str(n_students)])
-    step("2/9 Anonimleştirme ve maskeleme", [*cli, "anonymize"])
+    step("2/9 Anonimleştirme ve maskeleme", [*cli, "anonymize", "--no-consent-filter"])
     step("3/9 Sentetik resmî not", [py, "scripts/simulate_human_scores.py", "--stage", "official"])
     step("4/9 Altın set ve katlar", [*cli, "sample-gold", "--synthetic"])
     step("5/9 Sentetik iki puanlayıcı + hakem", [py, "scripts/simulate_human_scores.py", "--stage", "gold"])

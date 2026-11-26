@@ -11,7 +11,7 @@ fi
 [ -f data/resources/hunspell_tr/index.dic ] || bash scripts/fetch_tr_dictionary.sh || echo "Sözlük indirilemedi; yazım sayımı NA olacak"
 
 uv run python scripts/make_synthetic.py --n-students 50 --seed 20261112          # 1) sentetik Moodle dışa aktarımı
-uv run scoring anonymize                                                         # 2) anonimleştirme + maskeleme
+uv run scoring anonymize --no-consent-filter                                                         # 2) anonimleştirme + maskeleme
 uv run python scripts/simulate_human_scores.py --stage official                  # 3) (sentetik) resmî not
 uv run scoring sample-gold --synthetic                                           # 4) altın set + katlar + puanlayıcı dosyası
 uv run python scripts/simulate_human_scores.py --stage gold                      # 5) (sentetik) iki kör puanlayıcı + hakem

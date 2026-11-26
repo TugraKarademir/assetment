@@ -8,6 +8,11 @@ Bu araçta tekrar üretilebilirlik, kayıt tutma ve veri gizliliği, hızdan ve 
 > **Durum:** Etik kurul onayı gelene kadar yalnızca **sentetik veri** ile çalışılır. Depodaki sorular, rubrik,
 > çapalar ve tüm `results/` çıktıları sentetiktir; mock (sahte) modellerle üretilmiştir ve **bilimsel bir bulgu değildir**.
 
+## Gerçek veriyle çalışma
+
+Öğrenci yanıtları elinize geçtiğinde izlenecek adımlar (onam filtresi, anonimleştirme, altın set, puanlayıcı
+kalibrasyonu, hakem, model puanlaması): **[docs/gercek_veri_adimlari.md](docs/gercek_veri_adimlari.md)**.
+
 ## Hemen deneyin (kendi bilgisayarınızda)
 
 Zip'i çıkarın. **Windows**'ta `ARAYUZU_AC_Windows.bat` dosyasına çift tıklayın; **macOS/Linux**'ta
@@ -123,8 +128,13 @@ uv run scoring --help
 | Komut | Görev |
 |---|---|
 | `gen-key` | Eşleme tablosu için Fernet anahtarı üretir |
-| `anonymize [--export dosya.xlsx]` | Moodle CSV/XLSX okur, kimlikleri koda çevirir, metin içi kişisel veriyi maskeler |
+| `inspect-export dosya.xlsx` | Dışa aktarımın sütunlarını ve soru metinlerini gösterir (yanıt ya da kimlik yazdırmaz) |
+| `anonymize --consent onam.csv --item-map "5=S1,6=S2"` | Yalnızca onay verenleri alır, kimlikleri koda çevirir, metin içi kişisel veriyi maskeler |
 | `sample-gold [--per-item 300] [--synthetic]` | Katmanlı seçkisiz altın set, öğrenci düzeyinde 5 kat, puanlayıcı Excel'i, Label Studio JSON'u |
+| `calibration-sheet --round 1` | Puanlayıcı kalibrasyonu için altın sete girmeyen yanıtlardan Excel |
+| `import-ratings --file … --rater-id H1 --role rater1` | Doldurulmuş puanlayıcı/hakem Excel'ini içe aktarır |
+| `rater-agreement [--set calibration1]` | İki puanlayıcı arası uyum ve kalibrasyon hedefleri |
+| `adjudication-sheet` | Ayrışan ölçütler için hakem Excel'i |
 | `check-leakage` | Çapaların altın setten gelmediğini denetler (ihlalde çıkış kodu 1) |
 | `ui [--open]` | Tarayıcı arayüzü (`--extra ui` gerekir) |
 | `demo` | Sentetik veriyle uçtan uca deneme (her işletim sisteminde) |

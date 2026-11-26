@@ -42,7 +42,11 @@ def read_table(path: str | Path) -> pd.DataFrame:
         return pd.read_excel(path, dtype=str).fillna("")
     for enc in ("utf-8-sig", "utf-8", "cp1254", "latin-1"):
         try:
-            return pd.read_csv(path, dtype=str, sep=None, engine="python", encoding=enc).fillna("")
+            with open(path, encoding=enc) as f:
+                header = f.readline()
+            # Tek sütunlu dosyada ayırıcı tahmini yanılabilir (ör. e-postadaki "@"): başlıkta ayırıcı yoksa virgül
+            sep = None if any(c in header for c in ",;\t") else ","
+            return pd.read_csv(path, dtype=str, sep=sep, engine="python", encoding=enc).fillna("")
         except UnicodeDecodeError:
             continue
     raise ValueError(f"Dosya okunamadı: {path}")
@@ -83,10 +87,49 @@ def resolve_columns(columns: list[str], colmap: dict) -> tuple[dict[str, str], d
     return identity, meta, responses
 
 
-def read_moodle_export(path: str | Path, colmap: dict) -> list[MoodleRecord]:
+def parse_item_map(spec: str | None, colmap: dict) -> dict[int, str]:
+    """'5=S1,6=S2' biçimindeki komut satırı eşlemesi; verilmezse moodle_columns.yaml > item_map."""
+    if spec:
+        out = {}
+        for part in spec.split(","):
+            k, v = part.split("=")
+            out[int(k.strip())] = v.strip()
+        return out
+    return {int(k): v for k, v in colmap["item_map"].items()}
+
+
+def inspect_export(path: str | Path, colmap: dict) -> dict:
+    """Dışa aktarımın yapısını özetler. ÖĞRENCİ YANITLARINI ya da kimlik bilgilerini YAZDIRMAZ;
+    yalnızca sütun adları, sayımlar ve (varsa) Moodle'ın 'Soru N' sütunlarındaki soru metinlerinin başı."""
     df = read_table(path)
     identity_cols, meta_cols, response_cols = resolve_columns(list(df.columns), colmap)
-    item_map = {int(k): v for k, v in colmap["item_map"].items()}
+    qcols = {}
+    for c in df.columns:
+        m = re.match(r"^(?:soru|question)\s*(\d+)$", norm_header(c))
+        if m:
+            qcols[int(m.group(1))] = c
+    empty = {tr_lower(e).strip() for e in colmap.get("empty_markers", [])}
+    rows = []
+    for n, col in sorted(response_cols.items()):
+        vals = df[col].astype(str).map(clean_text)
+        filled = vals[~vals.map(lambda v: tr_lower(v).strip() in empty)]
+        qtext = ""
+        if n in qcols:
+            qv = df[qcols[n]].astype(str).map(clean_text)
+            qv = qv[qv.str.len() > 0]
+            qtext = (qv.iloc[0][:90] + "…") if len(qv) else ""
+        rows.append({"no": n, "sutun": col, "dolu_yanit": int(len(filled)),
+                     "ort_kelime": round(float(filled.str.split().str.len().mean()), 1) if len(filled) else 0.0,
+                     "soru_metni_basi": qtext})
+    return {"n_rows": len(df), "identity": identity_cols, "meta": meta_cols, "responses": rows,
+            "other_columns": [c for c in df.columns if c not in set(identity_cols.values()) | set(meta_cols.values())
+                              | set(response_cols.values()) | set(qcols.values())]}
+
+
+def read_moodle_export(path: str | Path, colmap: dict, item_map: dict[int, str] | None = None) -> list[MoodleRecord]:
+    df = read_table(path)
+    identity_cols, meta_cols, response_cols = resolve_columns(list(df.columns), colmap)
+    item_map = item_map or {int(k): v for k, v in colmap["item_map"].items()}
     finished = {tr_lower(s) for s in colmap.get("finished_states", [])}
     markers = [tr_lower(m) for m in colmap.get("drop_row_markers", [])]
     empty = {tr_lower(e).strip() for e in colmap.get("empty_markers", [])}

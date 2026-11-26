@@ -29,35 +29,44 @@ def _allocate(sizes: pd.Series, n: int) -> pd.Series:
     return alloc
 
 
-def sample_gold(responses: pd.DataFrame, official: pd.DataFrame, bank: ItemBank, per_item: int,
+def sample_gold(responses: pd.DataFrame, official: pd.DataFrame | None, bank: ItemBank, per_item: int,
                 strata_bins: int, seed: int, exclude_ids: set[str] | None = None) -> pd.DataFrame:
-    """Her sorudan `per_item` yanıtı, resmî toplam puana göre katmanlara orantılı olarak seçkisiz seçer.
+    """Her sorudan `per_item` yanıtı katmanlara orantılı olarak seçkisiz seçer.
 
-    Boş yanıtlar ve çapa kaynağı yanıtlar (exclude_ids) havuz dışıdır.
+    Katman değişkeni: resmî toplam puan (varsa); resmî not yoksa yanıt uzunluğu (kelime sayısı) — böylece altın
+    set kısa/uzun ve zayıf/güçlü yanıtları orantılı içerir. Boş yanıtlar ve çapa kaynağı yanıtlar havuz dışıdır.
     """
     rng = np.random.default_rng(seed)
     exclude_ids = exclude_ids or set()
-    off_tot = official.groupby("response_id")["score"].sum().rename("official_total")
-    pool = responses[(~responses.is_empty) & (~responses.response_id.isin(exclude_ids))]
-    pool = pool.merge(off_tot, left_on="response_id", right_index=True, how="inner")
+    pool = responses[(~responses.is_empty) & (~responses.response_id.isin(exclude_ids))].copy()
+    if official is not None and len(official):
+        off_tot = official.groupby("response_id")["score"].sum().rename("strata_value")
+        pool = pool.merge(off_tot, left_on="response_id", right_index=True, how="inner")
+        basis = "resmî toplam puan"
+    else:
+        pool["strata_value"] = pool.text.str.split().str.len().fillna(0)
+        basis = "yanıt uzunluğu (kelime)"
     out = []
     for item_id in bank.ids:
         p = pool[pool.item_id == item_id].sort_values("response_id").copy()
         n = min(per_item, len(p))
         if n < per_item:
             print(f"UYARI: {item_id} için havuzda {len(p)} yanıt var; {per_item} yerine {n} seçilecek.")
+        if n == 0:
+            continue
         try:
-            p["stratum"] = pd.qcut(p.official_total.rank(method="first"), q=min(strata_bins, len(p)),
+            p["stratum"] = pd.qcut(p.strata_value.rank(method="first"), q=min(strata_bins, len(p)),
                                    labels=False, duplicates="drop")
         except ValueError:
             p["stratum"] = 0
         sizes = p.groupby("stratum").size()
         alloc = _allocate(sizes, n)
-        for s, k in alloc.items():
-            cand = p[p.stratum == s]
+        for st, k in alloc.items():
+            cand = p[p.stratum == st]
             idx = rng.choice(len(cand), size=int(k), replace=False)
             out.append(cand.iloc[sorted(idx)])
-    gold = pd.concat(out)[["response_id", "student_code", "item_id", "stratum", "official_total"]]
+    gold = pd.concat(out)[["response_id", "student_code", "item_id", "stratum", "strata_value"]]
+    gold["strata_basis"] = basis
     return gold.sort_values("response_id").reset_index(drop=True)
 
 
