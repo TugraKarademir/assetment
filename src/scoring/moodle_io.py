@@ -38,6 +38,9 @@ def load_column_map(path: str | Path = "config/moodle_columns.yaml") -> dict:
 
 def read_table(path: str | Path) -> pd.DataFrame:
     path = Path(path)
+    if path.suffix.lower() == ".numbers":
+        raise ValueError("Apple Numbers dosyası (.numbers) okunamaz. Numbers'ta açıp Dosya > Şuraya Dışa Aktar > "
+                         "Excel ile .xlsx olarak kaydedin.")
     if path.suffix.lower() in (".xlsx", ".xls"):
         return pd.read_excel(path, dtype=str).fillna("")
     for enc in ("utf-8-sig", "utf-8", "cp1254", "latin-1"):

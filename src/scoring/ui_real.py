@@ -42,6 +42,18 @@ def show_result(code: int, out: str) -> None:
         st.code(out)
 
 
+NUMBERS_HELP = ("Bu bir Apple **Numbers** dosyası (.numbers); program Excel ya da CSV okur. Dosyayı Numbers'ta açıp "
+                "**Dosya → Şuraya Dışa Aktar → Excel…** ile `.xlsx` olarak kaydedin ve onu yükleyin.")
+
+
+def not_numbers(up) -> bool:
+    """Dosya seçildiyse ve Numbers dosyası değilse True; Numbers dosyasıysa açıklama gösterir."""
+    if up is not None and up.name.lower().endswith(".numbers"):
+        st.error(NUMBERS_HELP)
+        return False
+    return up is not None
+
+
 def act(step: str, args: list[str], spinner: str = "Çalışıyor…") -> None:
     """Komutu çalıştırır, sonucu saklar ve sayfayı yeniler (durum çubuğu güncellensin, çıktı kaybolmasın)."""
     with st.spinner(spinner):
@@ -186,16 +198,16 @@ def render(models_path: str) -> None:
         c1, c2 = st.columns(2)
         with c1:
             up = st.file_uploader("Moodle dışa aktarımı (Sınav > Sonuçlar > Yanıtlar; Excel ya da CSV)",
-                                  type=["xlsx", "xls", "csv"], key="up_export")
-            if up is not None and st.button("Dışa aktarımı kaydet"):
+                                  type=["xlsx", "xls", "csv", "numbers"], key="up_export")
+            if not_numbers(up) and st.button("Dışa aktarımı kaydet"):
                 save_upload(up, RAW_DIR, "moodle_export")
                 st.success("Kaydedildi: data/raw/")
                 st.rerun()
             st.caption(f"Mevcut: `{export}`" if export else "Henüz yüklenmedi.")
         with c2:
             upc = st.file_uploader("Onam verenlerin listesi (e-posta / öğrenci no / kullanıcı adı; isteğe bağlı "
-                                   "'Onam' sütunu)", type=["xlsx", "xls", "csv"], key="up_consent")
-            if upc is not None and st.button("Onam listesini kaydet"):
+                                   "'Onam' sütunu)", type=["xlsx", "xls", "csv", "numbers"], key="up_consent")
+            if not_numbers(upc) and st.button("Onam listesini kaydet"):
                 save_upload(upc, PRIV_DIR, "onam")
                 st.success("Kaydedildi: data/private/")
                 st.rerun()
@@ -308,8 +320,8 @@ def render(models_path: str) -> None:
             sets = ["gold"] + [f"calibration{p.stem[17:]}" for p in sorted(DERIVED.glob("calibration_round*.csv"))]
             set_name = c3.selectbox("Küme", sets + ["official"],
                                     format_func=lambda s: "altın set" if s == "gold" else s)
-            upr = st.file_uploader("Doldurulmuş Excel", type=["xlsx"], key="up_rating")
-            if upr is not None and st.button("İçe aktar", type="primary"):
+            upr = st.file_uploader("Doldurulmuş Excel", type=["xlsx", "numbers"], key="up_rating")
+            if not_numbers(upr) and st.button("İçe aktar", type="primary"):
                 dest = save_upload(upr, PRIV_DIR / "ratings", f"{set_name}_{role}_{rid}")
                 act("imp", ["import-ratings", "--file", str(dest), "--rater-id", rid, "--role", role, "--set", set_name])
             last_result("imp")
