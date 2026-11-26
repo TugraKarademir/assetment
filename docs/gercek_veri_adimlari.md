@@ -3,6 +3,25 @@
 Bu kılavuz, öğrenci yanıtları elinize geçtikten sonra yapılacak işleri sırasıyla anlatır. Komutlar proje
 klasöründe (`puanlama/`) çalıştırılır.
 
+## Arayüzle (komut satırı olmadan)
+
+Aşağıdaki adımların hepsi arayüzün **Gerçek veri** sekmesinden de yapılabilir:
+
+```bash
+uv run scoring ui --open          # Windows: ARAYUZU_AC_Windows.bat
+```
+
+Sekmedeki bölümler sırasıyla:
+1. Dosya yükleme.
+2. İnceleme, soru eşleme ve onamlı anonimleştirme.
+3. Gizli işaret taraması.
+4. Altın set, puanlayıcı ve kalibrasyon Excel'lerini indirme.
+5. Doldurulmuş Excel'leri yükleme, puanlayıcı uyumu ve hakem dosyası.
+6. Modellerle puanlama ve değerlendirme. İş arka planda çalışır; tarayıcı kapansa da sürer.
+
+Üstteki durum çubuğu hangi adımların bittiğini gösterir. Sonuçlar **Sonuçlar** sekmesinde görünür. İlk gerçek
+çalıştırmada depoyla gelen örnek (sentetik) sonuçlar `results/` klasöründen silinir.
+
 ## 0. Başlamadan önce
 
 | Koşul | Neden |

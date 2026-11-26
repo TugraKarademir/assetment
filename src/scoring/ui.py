@@ -1,6 +1,6 @@
 """Tarayıcı arayüzü (Streamlit):  uv run scoring ui
 
-Sekmeler: Yanıt dene · Sonuçlar · Modeller · Sentetik deneme
+Sekmeler: Gerçek veri · Yanıt dene · Sonuçlar · Modeller · Sentetik deneme
 Arayüz yalnızca 127.0.0.1'e bağlanır; uzaktan erişim için SSH tüneli kullanın (docs/arayuz.md).
 """
 from __future__ import annotations
@@ -119,7 +119,14 @@ with st.sidebar:
     st.caption("Her deneme kayda geçer: `logs/<çalıştırma>/calls.jsonl`. Denemeler araştırma verisine yazılmaz.")
 
 st.title("Katmanlı çok modelli puanlama")
-tab_try, tab_results, tab_models, tab_demo = st.tabs(["Yanıt dene", "Sonuçlar", "Modeller", "Sentetik deneme"])
+tab_real, tab_try, tab_results, tab_models, tab_demo = st.tabs(
+    ["Gerçek veri", "Yanıt dene", "Sonuçlar", "Modeller", "Sentetik deneme"])
+
+# ----------------------------------------------------------------------------- Gerçek veri
+with tab_real:
+    from scoring import ui_real
+    ui_real.render(models_path)
+
 
 # ----------------------------------------------------------------------------- Yanıt dene
 with tab_try:
@@ -209,7 +216,8 @@ with tab_results:
                 "`uv run scoring evaluate` kullanabilirsiniz.")
     else:
         readme = rdir / "README.md"
-        if readme.exists() and "sentetik" in readme.read_text(encoding="utf-8").lower():
+        if Path("data/synthetic/latent_truth.csv").exists() or (
+                readme.exists() and "sentetik" in readme.read_text(encoding="utf-8").lower()):
             st.warning("Bu klasördeki sonuçlar sentetik veri ve sahte modellerle üretilmiş ÖRNEK çıktıdır; "
                        "bilimsel bulgu değildir.")
         for name, title in found:

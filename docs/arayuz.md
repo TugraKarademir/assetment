@@ -57,6 +57,7 @@ ssh -N -L 8501:127.0.0.1:8501 kullanici@sunucu
 
 | Sekme | Ne işe yarar |
 |---|---|
+| **Gerçek veri** | Gerçek öğrenci verisiyle tüm akış, adım adım: dosya yükleme → soru eşleme ve onamlı anonimleştirme → gizli işaret taraması → altın set ve puanlayıcı Excel'leri → doldurulmuş Excel'leri yükleme, uyum, hakem dosyası → modellerle puanlama ve değerlendirme (arka planda). Ayrıntı: `docs/gercek_veri_adimlari.md`. |
 | **Yanıt dene** | Bir soru seçip yanıt yapıştırırsınız (ya da hazır örnek yüklersiniz). Her modelin Katman 1 ve Katman 2 puanını, ortalama ve ortancayı, birleştiricinin nihai puanını ve tüm gerekçeleri gösterir. Yanıttaki ad, numara ve e-posta gönderilmeden önce maskelenir. |
 | **Sonuçlar** | `evaluate` çıktıları: ana tablo, soru bazında QWK, Williamson ve ark. ölçütleri, koşul farkları, ağırlıklar, kararlılık, gerekçe kalitesi, Bland–Altman grafikleri. Tablolar CSV olarak indirilebilir. |
 | **Modeller** | Seçili paneldeki modellerin bağlantı, JSON ve bağlam kesilmesi testi. |
