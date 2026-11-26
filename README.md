@@ -15,8 +15,8 @@ kalibrasyonu, hakem, model puanlaması): **[docs/gercek_veri_adimlari.md](docs/g
 
 ## Hemen deneyin (kendi bilgisayarınızda)
 
-Zip'i çıkarın. **Windows**'ta `ARAYUZU_AC_Windows.bat` dosyasına çift tıklayın; **macOS/Linux**'ta
-`bash arayuzu_ac.sh` komutunu çalıştırın. Kurulum kendiliğinden yapılır ve arayüz tarayıcıda açılır. Sahte modellerle
+Zip'i çıkarın. **Windows**'ta `ARAYUZU_AC_Windows.bat` dosyasına çift tıklayın; **macOS**'ta
+`ARAYUZU_AC_Mac.command` dosyasına sağ tıklayıp **Aç**'ı seçin; **Linux**'ta `bash arayuzu_ac.sh` komutunu çalıştırın. Kurulum kendiliğinden yapılır ve arayüz tarayıcıda açılır. Sahte modellerle
 tek yanıt deneyebilir ve sentetik verilerle tüm akışı çalıştırabilirsiniz. Ayrıntı: [docs/arayuz.md](docs/arayuz.md).
 
 ## Kuramsal dayanak

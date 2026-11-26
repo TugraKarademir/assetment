@@ -9,7 +9,10 @@ yeterlidir.
 2. Klasörü açın ve işletim sisteminize göre başlatın:
    - **Windows:** `ARAYUZU_AC_Windows.bat` dosyasına çift tıklayın. Windows "korunan bilgisayar" uyarısı verirse
      **Ek bilgi > Yine de çalıştır** deyin.
-   - **macOS / Linux:** klasörde bir terminal açıp `bash arayuzu_ac.sh` yazın.
+   - **macOS:** `ARAYUZU_AC_Mac.command` dosyasına **sağ tıklayıp Aç**'ı seçin. İlk seferde macOS "geliştirici
+     doğrulanamadı" uyarısı verirse yine **Aç**'a basın; sonraki açılışlarda çift tıklamak yeterlidir. Olmazsa
+     klasörde Terminal açıp `bash arayuzu_ac.sh` yazın.
+   - **Linux:** klasörde bir terminal açıp `bash arayuzu_ac.sh` yazın.
 3. İlk açılışta `uv` ve Python ortamı kurulur (birkaç dakika). Ardından tarayıcıda arayüz açılır
    (`http://127.0.0.1:8501`).
 4. Kenar çubuğunda **Sahte modeller** seçili kalsın. **Yanıt dene** sekmesinde bir soru seçip **Hazır örnek
